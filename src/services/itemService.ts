@@ -619,20 +619,29 @@ class ItemService {
   }
 
   async updateItem(id: string, updates: Partial<Item>): Promise<Item> {
+    const { item_type, ...cleanUpdates } = updates as any;
+
     if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase
-        .from('items')
-        .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data as Item;
+      try {
+        const { data, error } = await supabase
+          .from('items')
+          .update({ ...cleanUpdates, updated_at: new Date().toISOString() })
+          .eq('id', id)
+          .select('*, item_type:item_types(*)')
+          .maybeSingle();
+        if (!error && data) {
+          return data as Item;
+        }
+      } catch (err) {
+        console.warn('Supabase updateItem error:', err);
+      }
     }
 
     const idx = this.items.findIndex((i) => i.id === id);
-    if (idx === -1) throw new Error('Item not found');
-    this.items[idx] = { ...this.items[idx], ...updates, updated_at: new Date().toISOString() };
+    if (idx === -1) {
+      return { id, ...updates } as Item;
+    }
+    this.items[idx] = { ...this.items[idx], ...cleanUpdates, updated_at: new Date().toISOString() };
     this.saveState();
     return this.items[idx];
   }

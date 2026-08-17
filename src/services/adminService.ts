@@ -44,6 +44,9 @@ class AdminService {
 
   public async logAction(action: string, targetType?: string, targetId?: string, metadata: Record<string, any> = {}) {
     const user = await authService.getCurrentUser();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const validUserId = user?.id && isUuid.test(user.id) ? user.id : null;
+
     const log: AuditLog = {
       id: 'log_' + Math.random().toString(36).substring(2, 9),
       user_id: user?.id,
@@ -57,7 +60,23 @@ class AdminService {
     };
 
     if (isSupabaseConfigured && supabase) {
-      await supabase.from('audit_logs').insert([log]);
+      try {
+        await supabase.from('audit_logs').insert([
+          {
+            user_id: validUserId,
+            action,
+            target_type: targetType || null,
+            target_id: targetId || null,
+            metadata: {
+              ...metadata,
+              user_name: user?.display_name || user?.full_name || 'System',
+              user_email: user?.email,
+            },
+          },
+        ]);
+      } catch (err) {
+        console.warn('Supabase audit log insert error:', err);
+      }
     }
 
     this.auditLogs.unshift(log);
@@ -66,12 +85,28 @@ class AdminService {
 
   async getAuditLogs(limit = 100): Promise<AuditLog[]> {
     if (isSupabaseConfigured && supabase) {
-      const { data } = await supabase
-        .from('audit_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(limit);
-      if (data) return data as AuditLog[];
+      try {
+        const { data } = await supabase
+          .from('audit_logs')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(limit);
+        if (data && data.length > 0) {
+          return data.map((d: any) => ({
+            id: d.id,
+            user_id: d.user_id,
+            user_name: d.metadata?.user_name || 'System',
+            user_email: d.metadata?.user_email || '',
+            action: d.action,
+            target_type: d.target_type,
+            target_id: d.target_id,
+            metadata: d.metadata || {},
+            created_at: d.created_at,
+          }));
+        }
+      } catch (err) {
+        console.warn('Supabase getAuditLogs error:', err);
+      }
     }
     return this.auditLogs.slice(0, limit);
   }

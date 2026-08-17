@@ -107,25 +107,40 @@ class DashboardService {
       .channel('ptech_dashboard_realtime')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'discoveries' },
+        { event: '*', schema: 'public', table: 'discoveries' },
         async (payload) => {
-          const { data: newDisc } = await client
-            .from('discoveries')
-            .select('*, item:items(*, item_type:item_types(*)), student:students(*)')
-            .eq('id', payload.new.id)
-            .single();
+          if (payload.eventType === 'INSERT') {
+            try {
+              const { data: newDisc } = await client
+                .from('discoveries')
+                .select('*, item:items(*, item_type:item_types(*)), student:students(*)')
+                .eq('id', payload.new.id)
+                .maybeSingle();
 
-          if (newDisc) {
-            this.notifyAlert(newDisc as Discovery);
+              if (newDisc) {
+                this.notifyAlert(newDisc as Discovery);
+              }
+            } catch (err) {
+              console.warn('Error fetching new discovery payload:', err);
+            }
           }
           this.notifyListeners();
         }
       )
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'event_settings' },
+        { event: '*', schema: 'public', table: 'items' },
+        () => {
+          this.notifyListeners();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'event_settings' },
         (payload) => {
-          this.settings = payload.new as EventSettings;
+          if (payload.new) {
+            this.settings = { ...this.settings, ...(payload.new as EventSettings) };
+          }
           this.notifyListeners();
         }
       )
@@ -134,10 +149,14 @@ class DashboardService {
 
   async getSettings(): Promise<EventSettings> {
     if (isSupabaseConfigured && supabase) {
-      const { data } = await supabase.from('event_settings').select('*').eq('id', 1).single();
-      if (data) {
-        this.settings = data as EventSettings;
-        return this.settings;
+      try {
+        const { data } = await supabase.from('event_settings').select('*').eq('id', 1).maybeSingle();
+        if (data) {
+          this.settings = { ...this.settings, ...(data as EventSettings) };
+          return this.settings;
+        }
+      } catch (err) {
+        console.warn('Supabase getSettings error:', err);
       }
     }
     return this.settings;
@@ -148,7 +167,11 @@ class DashboardService {
     localStorage.setItem('ptech_event_settings', JSON.stringify(this.settings));
 
     if (isSupabaseConfigured && supabase) {
-      await supabase.from('event_settings').update(newSettings).eq('id', 1);
+      try {
+        await supabase.from('event_settings').update(newSettings).eq('id', 1);
+      } catch (err) {
+        console.warn('Supabase updateSettings error:', err);
+      }
     }
 
     if (newSettings.sound_enabled !== undefined) {

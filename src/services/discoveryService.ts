@@ -33,7 +33,7 @@ export interface DiscoveryResult {
 
 class DiscoveryService {
   private discoveries: Discovery[] = [];
-  private eventListeners: ((event: { type: 'NEW_DISCOVERY' | 'REVOKED'; discovery: Discovery }) => void)[] = [];
+  private eventListeners: ((event: { type: 'NEW_DISCOVERY' | 'REVOKED' | 'RESET_ALL'; discovery?: Discovery | null }) => void)[] = [];
   private processedKeys = new Set<string>();
   private broadcastChannel: BroadcastChannel | null = null;
 
@@ -44,7 +44,7 @@ class DiscoveryService {
       try {
         this.broadcastChannel = new BroadcastChannel('ptech_realtime_channel');
         this.broadcastChannel.onmessage = (event) => {
-          if (event.data?.type && event.data?.discovery) {
+          if (event.data?.type) {
             this.syncFromStorage();
             this.eventListeners.forEach((cb) => cb(event.data));
           }
@@ -79,14 +79,14 @@ class DiscoveryService {
     localStorage.setItem('ptech_discoveries', JSON.stringify(this.discoveries));
   }
 
-  public onDiscoveryEvent(callback: (event: { type: 'NEW_DISCOVERY' | 'REVOKED'; discovery: Discovery }) => void) {
+  public onDiscoveryEvent(callback: (event: { type: 'NEW_DISCOVERY' | 'REVOKED' | 'RESET_ALL'; discovery?: Discovery | null }) => void) {
     this.eventListeners.push(callback);
     return () => {
       this.eventListeners = this.eventListeners.filter((cb) => cb !== callback);
     };
   }
 
-  private emitEvent(type: 'NEW_DISCOVERY' | 'REVOKED', discovery: Discovery) {
+  private emitEvent(type: 'NEW_DISCOVERY' | 'REVOKED' | 'RESET_ALL', discovery?: Discovery | null) {
     this.eventListeners.forEach((cb) => cb({ type, discovery }));
     
     // Broadcast across browser tabs via permanent BroadcastChannel
@@ -340,10 +340,26 @@ class DiscoveryService {
   async resetAllDiscoveries(): Promise<void> {
     this.discoveries = [];
     this.saveState();
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        // 1. Delete all discoveries from Supabase
+        await supabase.from('discoveries').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        // 2. Reset all active items status to 'active'
+        await supabase.from('items').update({ status: 'active', updated_at: new Date().toISOString() }).neq('status', 'disabled');
+        // 3. Clear discovery attempts log
+        await supabase.from('discovery_attempts').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      } catch (err) {
+        console.warn('Supabase reset error:', err);
+      }
+    }
+
     const allItems = await itemService.getAllItems();
     for (const it of allItems) {
       await itemService.updateItem(it.id, { status: 'active' });
     }
+
+    this.emitEvent('RESET_ALL', null);
   }
 }
 
