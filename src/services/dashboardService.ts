@@ -1,0 +1,263 @@
+import { DashboardStats, ItemType, RecentDiscoveryItem, EventSettings, Discovery } from '@/types';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { itemService } from './itemService';
+import { discoveryService } from './discoveryService';
+import { maskStudentName } from '@/lib/privacy';
+import { soundManager } from '@/lib/sound';
+
+export const INITIAL_EVENT_SETTINGS: EventSettings = {
+  id: 1,
+  event_name: 'PTECH-Sci : Survive in Mario World',
+  tagline: 'The Game Has Begun. Science Is Your Only Way Out.',
+  status: 'open',
+  dashboard_title: 'PTECH-Sci : SURVIVE IN MARIO WORLD',
+  dashboard_subtitle: 'MISSION CONTROL - RECOVERY DASHBOARD',
+  show_student_name_mode: 'masked',
+  sound_enabled: true,
+  animation_enabled: true,
+  celebration_enabled: true,
+  show_recent_discoveries: true,
+  show_item_hints: true,
+  maintenance_mode: false,
+};
+
+class DashboardService {
+  private settings: EventSettings = { ...INITIAL_EVENT_SETTINGS };
+  private listeners: (() => void)[] = [];
+  private alertListeners: ((discovery: Discovery) => void)[] = [];
+  private broadcastChannel: BroadcastChannel | null = null;
+  private supabaseChannel: any = null;
+
+  constructor() {
+    const saved = localStorage.getItem('ptech_event_settings');
+    if (saved) {
+      try {
+        this.settings = { ...INITIAL_EVENT_SETTINGS, ...JSON.parse(saved) };
+      } catch {
+        this.settings = { ...INITIAL_EVENT_SETTINGS };
+      }
+    }
+
+    // Listen to local discovery service events
+    discoveryService.onDiscoveryEvent((event) => {
+      if (event.type === 'NEW_DISCOVERY' && event.discovery) {
+        this.notifyAlert(event.discovery);
+      }
+      this.notifyListeners();
+    });
+
+    // Listen to BroadcastChannel across browser tabs/windows
+    if (typeof window !== 'undefined') {
+      if (window.BroadcastChannel) {
+        try {
+          this.broadcastChannel = new BroadcastChannel('ptech_realtime_channel');
+          this.broadcastChannel.onmessage = (msg) => {
+            if (msg.data?.type === 'NEW_DISCOVERY' && msg.data?.discovery) {
+              this.notifyAlert(msg.data.discovery);
+            }
+            this.notifyListeners();
+          };
+        } catch {
+          // ignore
+        }
+      }
+
+      window.addEventListener('ptech_discovery_event', (e: any) => {
+        if (e.detail?.type === 'NEW_DISCOVERY' && e.detail?.discovery) {
+          this.notifyAlert(e.detail.discovery);
+        }
+        this.notifyListeners();
+      });
+
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'ptech_discoveries' || e.key === 'ptech_items' || e.key === 'ptech_event_settings') {
+          this.notifyListeners();
+        }
+      });
+    }
+  }
+
+  public subscribe(callback: () => void) {
+    this.listeners.push(callback);
+    return () => {
+      this.listeners = this.listeners.filter((cb) => cb !== callback);
+    };
+  }
+
+  public onDiscoveryAlert(callback: (discovery: Discovery) => void) {
+    this.alertListeners.push(callback);
+    return () => {
+      this.alertListeners = this.alertListeners.filter((cb) => cb !== callback);
+    };
+  }
+
+  private notifyListeners() {
+    this.listeners.forEach((cb) => cb());
+  }
+
+  private notifyAlert(discovery: Discovery) {
+    this.alertListeners.forEach((cb) => cb(discovery));
+  }
+
+  public initSupabaseRealtime() {
+    if (!isSupabaseConfigured || !supabase || this.supabaseChannel) return;
+    const client = supabase;
+
+    this.supabaseChannel = client
+      .channel('ptech_dashboard_realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'discoveries' },
+        async (payload) => {
+          const { data: newDisc } = await client
+            .from('discoveries')
+            .select('*, item:items(*, item_type:item_types(*)), student:students(*)')
+            .eq('id', payload.new.id)
+            .single();
+
+          if (newDisc) {
+            this.notifyAlert(newDisc as Discovery);
+          }
+          this.notifyListeners();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'event_settings' },
+        (payload) => {
+          this.settings = payload.new as EventSettings;
+          this.notifyListeners();
+        }
+      )
+      .subscribe();
+  }
+
+  async getSettings(): Promise<EventSettings> {
+    if (isSupabaseConfigured && supabase) {
+      const { data } = await supabase.from('event_settings').select('*').eq('id', 1).single();
+      if (data) {
+        this.settings = data as EventSettings;
+        return this.settings;
+      }
+    }
+    return this.settings;
+  }
+
+  async updateSettings(newSettings: Partial<EventSettings>): Promise<EventSettings> {
+    this.settings = { ...this.settings, ...newSettings };
+    localStorage.setItem('ptech_event_settings', JSON.stringify(this.settings));
+
+    if (isSupabaseConfigured && supabase) {
+      await supabase.from('event_settings').update(newSettings).eq('id', 1);
+    }
+
+    if (newSettings.sound_enabled !== undefined) {
+      soundManager.setEnabled(newSettings.sound_enabled);
+    }
+
+    this.notifyListeners();
+    return this.settings;
+  }
+
+  // --------------------------------------------------------------------------
+  // Aggregated Stats
+  // --------------------------------------------------------------------------
+  async getDashboardStats(): Promise<DashboardStats> {
+    const allItems = await itemService.getAllItems();
+    const activeItems = allItems.filter((i) => i.status !== 'disabled');
+    const allDiscoveries = await discoveryService.getAllDiscoveries();
+    const confirmedDiscoveries = allDiscoveries.filter((d) => d.status === 'confirmed');
+
+    const total_items = this.settings.total_items_override && this.settings.total_items_override > 0
+      ? this.settings.total_items_override
+      : activeItems.length || 25;
+
+    const discovered_items = confirmedDiscoveries.length;
+    const remaining_items = Math.max(0, total_items - discovered_items);
+    const world_restored_percentage = total_items === 0 ? 0 : Math.round((discovered_items / total_items) * 1000) / 10;
+
+    let mission_status: DashboardStats['mission_status'] = 'ACTIVE';
+    if (this.settings.status === 'paused') mission_status = 'PAUSED';
+    else if (this.settings.status === 'closed') mission_status = 'CLOSED';
+    else if (total_items > 0 && discovered_items >= total_items) mission_status = 'RESTORATION COMPLETE';
+
+    return {
+      total_items,
+      discovered_items,
+      remaining_items,
+      world_restored_percentage,
+      mission_status,
+    };
+  }
+
+  // --------------------------------------------------------------------------
+  // Progress by Item Type (5 Categories)
+  // --------------------------------------------------------------------------
+  async getItemsByTypeProgress(): Promise<ItemType[]> {
+    const itemTypes = await itemService.getItemTypes();
+    const allItems = await itemService.getAllItems();
+    const allDiscoveries = await discoveryService.getAllDiscoveries();
+    const confirmedDisc = allDiscoveries.filter((d) => d.status === 'confirmed');
+
+    return itemTypes.map((type) => {
+      const typeItems = allItems.filter((i) => i.item_type_id === type.id && i.status !== 'disabled');
+      const typeItemIds = new Set(typeItems.map((i) => i.id));
+      const discoveredCount = confirmedDisc.filter((d) => typeItemIds.has(d.item_id)).length;
+      const totalCount = typeItems.length || 5;
+      const remainingCount = Math.max(0, totalCount - discoveredCount);
+      const progressPercentage = totalCount === 0 ? 0 : Math.round((discoveredCount / totalCount) * 100);
+
+      return {
+        ...type,
+        total_count: totalCount,
+        discovered_count: discoveredCount,
+        remaining_count: remainingCount,
+        progress_percentage: progressPercentage,
+      };
+    });
+  }
+
+  // --------------------------------------------------------------------------
+  // Recent Discoveries for Public LED
+  // --------------------------------------------------------------------------
+  async getRecentDiscoveries(limit = 8): Promise<RecentDiscoveryItem[]> {
+    const discoveries = await discoveryService.getAllDiscoveries();
+    const allItems = await itemService.getAllItems();
+    const itemTypes = await itemService.getItemTypes();
+
+    const confirmed = discoveries.filter((d) => d.status === 'confirmed').slice(0, limit);
+
+    return confirmed.map((d) => {
+      const item = d.item || allItems.find((i) => i.id === d.item_id);
+      const type = itemTypes.find((t) => t.id === item?.item_type_id) || item?.item_type;
+
+      const rawFullName = d.student?.full_name || d.manual_student_name;
+      const rawFirstName = d.student?.first_name;
+      const rawLastName = d.student?.last_name;
+
+      const maskedName = maskStudentName(rawFullName, rawFirstName, rawLastName, this.settings.show_student_name_mode);
+
+      return {
+        discovery_id: d.id,
+        discovered_at: d.discovered_at,
+        status: d.status,
+        reward_claimed: d.reward_claimed,
+        item_id: d.item_id,
+        item_code: item?.item_code || 'ITEM',
+        item_name: item?.name || 'Secret Item',
+        type_name: type?.name || 'CORE',
+        type_icon: type?.icon || '⭐',
+        type_color: type?.color || '#FFD700',
+        student_id: d.student_id,
+        student_code: d.student?.student_code || d.manual_student_code,
+        student_full_name: rawFullName,
+        student_display_name: maskedName,
+        class_name: d.student?.class_name,
+        department: d.student?.department,
+        staff_name: d.staff_profile?.display_name || 'Staff',
+      };
+    });
+  }
+}
+
+export const dashboardService = new DashboardService();
