@@ -4,54 +4,71 @@
 
 @layer base {
   :root {
-    --background: 222 47% 5%;
-    --foreground: 210 40% 98%;
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
     --dashboard-font-scale: 1;
   }
 
   body {
-    background-color: #080D1A;
-    color: #F8FAFC;
+    background-color: #F0F4F8;
+    color: #0F172A;
     font-family: 'Inter', 'Prompt', sans-serif;
     background-image: 
-      radial-gradient(circle at 50% 0%, rgba(234, 32, 39, 0.18), transparent 45%),
-      radial-gradient(circle at 85% 75%, rgba(2, 132, 199, 0.15), transparent 40%),
-      radial-gradient(circle at 15% 80%, rgba(249, 200, 14, 0.12), transparent 40%);
+      radial-gradient(circle at 50% 0%, rgba(234, 32, 39, 0.08), transparent 45%),
+      radial-gradient(circle at 85% 75%, rgba(2, 132, 199, 0.08), transparent 40%),
+      radial-gradient(circle at 15% 80%, rgba(249, 200, 14, 0.09), transparent 40%),
+      linear-gradient(to right, rgba(45, 75, 115, 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(45, 75, 115, 0.06) 1px, transparent 1px);
+    background-size: auto, auto, auto, 28px 28px, 28px 28px;
     background-attachment: fixed;
   }
 }
 
-/* Scalable Font Scaling Utility */
+/* Scalable Font Scaling Utility - ONLY scales text typography without zooming layout/padding */
 .dashboard-scalable {
-  font-size: calc(1rem * var(--dashboard-font-scale, 1));
+  --dashboard-font-scale: 1;
 }
 
-/* PTECH-Sci Survivor Passport Visual Components */
+.dashboard-scalable .text-\[9px\] { font-size: calc(9px * var(--dashboard-font-scale, 1)) !important; }
+.dashboard-scalable .text-\[10px\] { font-size: calc(10px * var(--dashboard-font-scale, 1)) !important; }
+.dashboard-scalable .text-\[11px\] { font-size: calc(11px * var(--dashboard-font-scale, 1)) !important; }
+.dashboard-scalable .text-xs { font-size: calc(0.75rem * var(--dashboard-font-scale, 1)) !important; line-height: 1.25 !important; }
+.dashboard-scalable .text-sm { font-size: calc(0.875rem * var(--dashboard-font-scale, 1)) !important; line-height: 1.25 !important; }
+.dashboard-scalable .text-base { font-size: calc(1rem * var(--dashboard-font-scale, 1)) !important; line-height: 1.3 !important; }
+.dashboard-scalable .text-lg { font-size: calc(1.125rem * var(--dashboard-font-scale, 1)) !important; line-height: 1.3 !important; }
+.dashboard-scalable .text-xl { font-size: calc(1.25rem * var(--dashboard-font-scale, 1)) !important; line-height: 1.2 !important; }
+.dashboard-scalable .text-2xl { font-size: calc(1.5rem * var(--dashboard-font-scale, 1)) !important; line-height: 1.2 !important; }
+.dashboard-scalable .text-3xl { font-size: calc(1.875rem * var(--dashboard-font-scale, 1)) !important; line-height: 1.1 !important; }
+.dashboard-scalable .text-4xl { font-size: calc(2.25rem * var(--dashboard-font-scale, 1)) !important; line-height: 1.1 !important; }
+.dashboard-scalable .text-5xl { font-size: calc(3rem * var(--dashboard-font-scale, 1)) !important; line-height: 1 !important; }
+.dashboard-scalable .text-6xl { font-size: calc(3.75rem * var(--dashboard-font-scale, 1)) !important; line-height: 1 !important; }
+.dashboard-scalable .text-7xl { font-size: calc(4.5rem * var(--dashboard-font-scale, 1)) !important; line-height: 1 !important; }
+.dashboard-scalable .text-8xl { font-size: calc(6rem * var(--dashboard-font-scale, 1)) !important; line-height: 1 !important; }
+
+/* PTECH-Sci Survivor Passport Visual Components (Cream Theme) */
 .passport-card {
-  background: rgba(15, 23, 42, 0.88);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 2px solid #3A6073;
+  background: #FFFFFF;
+  border: 2.5px solid #3A6073;
   border-radius: 1.25rem;
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(82, 130, 157, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 25px -5px rgba(45, 75, 115, 0.15), 0 0 0 1px rgba(82, 130, 157, 0.2), inset 0 1px 0 rgba(255, 255, 255, 1);
   position: relative;
 }
 
 .passport-card-inner {
-  background: rgba(10, 17, 34, 0.7);
-  border: 1.5px solid rgba(58, 96, 115, 0.5);
+  background: #F8FAFC;
+  border: 2px solid #3A6073;
   border-radius: 0.875rem;
 }
 
 /* Passport Rivet Corners */
 .passport-rivet-tl, .passport-rivet-tr, .passport-rivet-bl, .passport-rivet-br {
   position: absolute;
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: #94A3B8;
-  border: 1px solid #1E293B;
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.8), 0 1px 2px rgba(0,0,0,0.6);
+  border: 1.5px solid #334155;
+  box-shadow: inset 0 1px 1px #FFFFFF, 0 1px 2px rgba(0,0,0,0.3);
   pointer-events: none;
   z-index: 10;
 }
@@ -65,58 +82,55 @@
   background: linear-gradient(135deg, #0284C7, #0369A1);
   color: #FFFFFF;
   border: 1.5px solid #38BDF8;
-  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
 }
 
 .passport-badge-red {
   background: linear-gradient(135deg, #EA2027, #B91C1C);
   color: #FFFFFF;
   border: 1.5px solid #F87171;
-  box-shadow: 0 2px 8px rgba(234, 32, 39, 0.4);
+  box-shadow: 0 2px 8px rgba(234, 32, 39, 0.35);
 }
 
 .passport-badge-yellow {
   background: linear-gradient(135deg, #F9C80E, #D97706);
   color: #0F172A;
   border: 1.5px solid #FDE047;
-  box-shadow: 0 2px 8px rgba(249, 200, 14, 0.4);
+  box-shadow: 0 2px 8px rgba(249, 200, 14, 0.35);
 }
 
 .passport-badge-green {
-  background: linear-gradient(135deg, #22C55E, #15803D);
+  background: linear-gradient(135deg, #16A34A, #15803D);
   color: #FFFFFF;
   border: 1.5px solid #86EFAC;
-  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.35);
 }
 
 .passport-badge-purple {
-  background: linear-gradient(135deg, #8B5CF6, #6D28D9);
+  background: linear-gradient(135deg, #7C3AED, #6D28D9);
   color: #FFFFFF;
   border: 1.5px solid #C4B5FD;
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35);
 }
 
 .passport-badge-orange {
   background: linear-gradient(135deg, #EA580C, #C2410C);
   color: #FFFFFF;
   border: 1.5px solid #FB923C;
-  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.4);
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.35);
 }
 
 /* Sci-Fi Mario Game Aesthetic Utilities */
 .game-panel {
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: #FFFFFF;
   border: 2px solid #3A6073;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+  box-shadow: 0 8px 24px 0 rgba(45, 75, 115, 0.12);
 }
 
 .game-panel-glow {
-  background: rgba(18, 26, 54, 0.9);
-  backdrop-filter: blur(16px);
-  border: 2px solid rgba(249, 200, 14, 0.5);
-  box-shadow: 0 0 25px rgba(249, 200, 14, 0.25), inset 0 0 15px rgba(249, 200, 14, 0.1);
+  background: #FFFFFF;
+  border: 2px solid #F9C80E;
+  box-shadow: 0 0 20px rgba(249, 200, 14, 0.25), inset 0 0 15px rgba(249, 200, 14, 0.05);
 }
 
 .pixel-border {

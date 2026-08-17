@@ -7,7 +7,7 @@ import { RecentDiscoveries } from '@/components/dashboard/RecentDiscoveries';
 import { DiscoveryAlertModal } from '@/components/dashboard/DiscoveryAlertModal';
 import { CelebrationOverlay } from '@/components/dashboard/CelebrationOverlay';
 import { LiveStatusBadge } from '@/components/dashboard/LiveStatusBadge';
-import { FontSizeController } from '@/components/dashboard/FontSizeController';
+import { FontSizeController, getSavedFontScale, applyFontScale } from '@/components/dashboard/FontSizeController';
 import { soundManager } from '@/lib/sound';
 import { Volume2, VolumeX, Maximize2, Minimize2, ArrowLeft, Radio, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -48,6 +48,9 @@ export const LEDDashboardPage: React.FC = () => {
   useEffect(() => {
     loadData();
     dashboardService.initSupabaseRealtime();
+
+    const savedScale = getSavedFontScale();
+    applyFontScale(savedScale);
 
     const unsub = dashboardService.subscribe(() => {
       loadData();
@@ -107,7 +110,7 @@ export const LEDDashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="dashboard-scalable w-screen h-screen max-h-screen bg-mario-deepBg text-white p-2.5 sm:p-4 lg:p-5 flex flex-col justify-between select-none overflow-hidden relative led-scanlines">
+    <div className="dashboard-scalable w-screen h-screen max-h-screen bg-[#F0F4F8] text-slate-900 p-2.5 sm:p-4 lg:p-5 flex flex-col justify-between select-none overflow-hidden relative">
       
       {/* Floating HUD Controls in Corner */}
       <div className={`absolute top-3.5 right-4 z-30 flex items-center gap-2 transition-all ${
@@ -120,8 +123,8 @@ export const LEDDashboardPage: React.FC = () => {
 
         <button
           onClick={toggleSound}
-          className={`p-2 rounded-xl border backdrop-blur-md transition-all ${
-            soundEnabled ? 'passport-badge-yellow text-slate-900 border-mario-yellow' : 'bg-slate-900 border-slate-700 text-slate-500'
+          className={`p-2 rounded-xl border-2 border-passport-border backdrop-blur-md transition-all ${
+            soundEnabled ? 'passport-badge-yellow text-slate-900' : 'bg-white text-slate-500 hover:bg-slate-100'
           }`}
           title={soundEnabled ? 'ปิดเสียง' : 'เปิดเสียง'}
         >
@@ -130,7 +133,7 @@ export const LEDDashboardPage: React.FC = () => {
 
         <button
           onClick={toggleFullscreen}
-          className="p-2 rounded-xl bg-slate-900/90 border border-passport-border text-slate-300 hover:text-white transition-all backdrop-blur-md"
+          className="p-2 rounded-xl bg-white border-2 border-passport-border text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition-all shadow-xs"
           title={isFullscreen ? 'ออกจากเต็มจอ (F)' : 'เต็มจอ (Fullscreen - F)'}
         >
           {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -138,7 +141,7 @@ export const LEDDashboardPage: React.FC = () => {
 
         <Link
           to="/dashboard"
-          className="p-2 rounded-xl bg-slate-900/90 border border-passport-border text-slate-400 hover:text-white transition-all backdrop-blur-md"
+          className="p-2 rounded-xl bg-white border-2 border-passport-border text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition-all shadow-xs"
           title="กลับหน้าหลัก Dashboard"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -147,12 +150,12 @@ export const LEDDashboardPage: React.FC = () => {
 
       {/* Top Header: 16:9 Presentation Banner with Passport Style */}
       <div className="text-center space-y-1 mb-1">
-        <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full passport-badge-red text-white font-game text-xs tracking-wider shadow-neon-red">
-          <Star className="w-3.5 h-3.5 text-mario-yellow fill-mario-yellow" />
+        <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full passport-badge-red text-white font-game text-xs tracking-wider shadow-sm">
+          <Star className="w-3.5 h-3.5 text-white fill-white" />
           <span>{settings?.dashboard_title || 'PTECH-Sci SURVIVOR PASSPORT'}</span>
-          <span className="hidden sm:inline-block text-[10px] font-mono bg-black/30 px-1.5 py-0.2 rounded">16:9 DOME</span>
+          <span className="hidden sm:inline-block text-[10px] font-mono bg-black/20 px-1.5 py-0.2 rounded font-bold">16:9 DOME</span>
         </div>
-        <h1 className="font-game text-base sm:text-lg lg:text-xl text-white tracking-wide mt-1 drop-shadow-md">
+        <h1 className="font-game text-base sm:text-lg lg:text-xl text-slate-900 tracking-wide mt-1 drop-shadow-xs">
           {settings?.tagline || 'THE GAME HAS BEGUN. SCIENCE IS YOUR ONLY WAY OUT.'}
         </h1>
       </div>

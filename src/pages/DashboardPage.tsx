@@ -7,7 +7,7 @@ import { RecentDiscoveries } from '@/components/dashboard/RecentDiscoveries';
 import { DiscoveryAlertModal } from '@/components/dashboard/DiscoveryAlertModal';
 import { CelebrationOverlay } from '@/components/dashboard/CelebrationOverlay';
 import { LiveStatusBadge } from '@/components/dashboard/LiveStatusBadge';
-import { FontSizeController } from '@/components/dashboard/FontSizeController';
+import { FontSizeController, getSavedFontScale, applyFontScale } from '@/components/dashboard/FontSizeController';
 import { Radio, Sparkles, Tv, Star, ShieldCheck, MapPin, Award } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -52,6 +52,10 @@ export const DashboardPage: React.FC = () => {
     loadData();
     dashboardService.initSupabaseRealtime();
 
+    // Re-apply saved scale to ensure zoom applies on navigation
+    const savedScale = getSavedFontScale();
+    applyFontScale(savedScale);
+
     // Subscribe to live dashboard changes
     const unsub = dashboardService.subscribe(() => {
       loadData();
@@ -84,7 +88,7 @@ export const DashboardPage: React.FC = () => {
     <div className="dashboard-scalable min-h-screen pb-16 pt-4 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-6 sm:space-y-8">
       
       {/* Top Banner & Passport Header Toolbar */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-4 border-b border-passport-border/70">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-4 border-b-2 border-slate-300">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
             <span className="passport-badge-red text-[11px] font-game px-3 py-1 rounded-full font-black tracking-wider shadow-sm">
@@ -93,11 +97,11 @@ export const DashboardPage: React.FC = () => {
             <span className="passport-badge-yellow text-[10px] font-mono px-2 py-0.5 rounded-full font-black shadow-sm">
               MARIO WORLD
             </span>
-            <span className="px-2 py-0.5 rounded-full bg-mario-blue/20 text-sky-300 border border-mario-blue/50 font-mono text-[10px] font-bold">
+            <span className="px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-300 font-mono text-[10px] font-bold">
               REAL-TIME
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-white tracking-tight mt-2 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight mt-2 flex items-center gap-2">
             <span>{settings?.tagline || 'The Game Has Begun. Science Is Your Only Way Out.'}</span>
           </h1>
         </div>
@@ -128,15 +132,15 @@ export const DashboardPage: React.FC = () => {
       <div>
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <div className="flex items-center gap-2.5">
-            <span className="passport-badge-blue px-2.5 py-1 rounded-lg text-xs font-black flex items-center gap-1">
-              <Star className="w-3.5 h-3.5 text-mario-yellow fill-mario-yellow" />
+            <span className="passport-badge-blue px-2.5 py-1 rounded-lg text-xs font-black flex items-center gap-1 shadow-sm">
+              <Star className="w-3.5 h-3.5 text-white fill-white" />
               <span>3</span>
             </span>
-            <h2 className="font-game text-xs sm:text-sm text-mario-yellow tracking-wider drop-shadow-md">
+            <h2 className="font-game text-xs sm:text-sm text-slate-900 tracking-wider">
               SECRET CORE TYPES ({itemTypes.length} CATEGORIES)
             </h2>
           </div>
-          <span className="text-xs font-mono font-bold text-slate-300 bg-slate-900/80 px-3 py-1 rounded-lg border border-passport-border">
+          <span className="text-xs font-mono font-bold text-slate-700 bg-white px-3 py-1 rounded-lg border-2 border-passport-border shadow-xs">
             {stats.discovered_items} / {stats.total_items} ITEMS RECOVERED
           </span>
         </div>

@@ -60,7 +60,7 @@ export const Navbar: React.FC = () => {
   }
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-passport-border bg-slate-950/90 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full border-b-2 border-passport-border bg-white/95 backdrop-blur-md shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         
         {/* Brand Logo & Title */}
@@ -69,17 +69,17 @@ export const Navbar: React.FC = () => {
           onClick={() => soundManager.playClick()}
           className="flex items-center gap-3 group"
         >
-          <div className="w-10 h-10 rounded-xl passport-badge-red p-0.5 shadow-neon-red group-hover:scale-105 transition-transform flex items-center justify-center">
-            <Gamepad2 className="w-6 h-6 text-mario-yellow animate-pulse" />
+          <div className="w-10 h-10 rounded-xl passport-badge-red p-0.5 shadow-sm group-hover:scale-105 transition-transform flex items-center justify-center">
+            <Gamepad2 className="w-6 h-6 text-white animate-pulse" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-game text-xs text-mario-yellow tracking-wider drop-shadow-sm">PTECH-Sci</span>
+              <span className="font-game text-xs text-slate-900 tracking-wider">PTECH-Sci</span>
               <span className="text-[10px] px-1.5 py-0.2 rounded passport-badge-yellow text-slate-950 font-mono font-black">
                 PASSPORT
               </span>
             </div>
-            <p className="text-xs text-slate-300 font-medium">Secret Item Hunt • Mario World</p>
+            <p className="text-xs text-slate-500 font-medium">Secret Item Hunt • Mario World</p>
           </div>
         </Link>
 
@@ -91,10 +91,10 @@ export const Navbar: React.FC = () => {
             className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
               location.pathname === '/dashboard' || location.pathname === '/'
                 ? 'passport-badge-blue shadow-sm'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
             }`}
           >
-            <Tv className="w-4 h-4 text-mario-yellow" />
+            <Tv className="w-4 h-4" />
             <span>Dashboard</span>
           </Link>
 
@@ -104,7 +104,7 @@ export const Navbar: React.FC = () => {
             className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
               location.pathname === '/staff'
                 ? 'passport-badge-orange shadow-sm'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
             }`}
           >
             <ScanLine className="w-4 h-4" />
@@ -117,7 +117,7 @@ export const Navbar: React.FC = () => {
             className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
               location.pathname.startsWith('/admin')
                 ? 'passport-badge-purple shadow-sm'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
             }`}
           >
             <ShieldAlert className="w-4 h-4" />
@@ -127,7 +127,7 @@ export const Navbar: React.FC = () => {
           <Link
             to="/dashboard/led"
             onClick={() => soundManager.playClick()}
-            className="px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 text-mario-green hover:bg-mario-green/20 border border-mario-green/50 ml-2 shadow-sm"
+            className="px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 text-green-700 hover:bg-green-100 border-2 border-green-500 ml-2 shadow-xs"
           >
             <Radio className="w-3.5 h-3.5 animate-pulse" />
             <span>LED DOME (16:9)</span>
@@ -140,10 +140,10 @@ export const Navbar: React.FC = () => {
           <button
             onClick={toggleSound}
             title={soundEnabled ? 'ปิดเสียง' : 'เปิดเสียง'}
-            className={`p-2 rounded-xl border transition-all ${
+            className={`p-2 rounded-xl border-2 transition-all ${
               soundEnabled
-                ? 'passport-badge-yellow text-slate-900 shadow-sm border-mario-yellow'
-                : 'bg-slate-800/80 border-passport-border text-slate-400'
+                ? 'passport-badge-yellow text-slate-900 border-amber-400'
+                : 'bg-slate-100 border-slate-300 text-slate-600 hover:bg-slate-200'
             }`}
           >
             {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
@@ -153,16 +153,16 @@ export const Navbar: React.FC = () => {
           <button
             onClick={toggleFullscreen}
             title={isFullscreen ? 'ออกจากเต็มจอ' : 'เต็มจอ'}
-            className="p-2 rounded-xl bg-slate-800/80 border border-passport-border text-slate-300 hover:text-white hover:border-slate-500 transition-all hidden sm:block"
+            className="p-2 rounded-xl bg-slate-100 border border-slate-300 text-slate-700 hover:text-slate-950 hover:bg-slate-200 transition-all hidden sm:block"
           >
             <Maximize2 className="w-4 h-4" />
           </button>
 
           {/* User Profile Badge or Login */}
           {profile ? (
-            <div className="flex items-center gap-2 pl-2 border-l border-passport-border">
+            <div className="flex items-center gap-2 pl-2 border-l-2 border-slate-200">
               <div className="text-right hidden sm:block">
-                <p className="text-xs font-semibold text-slate-200">{profile.display_name || profile.full_name}</p>
+                <p className="text-xs font-bold text-slate-900">{profile.display_name || profile.full_name}</p>
                 <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded font-bold uppercase ${
                   profile.role === 'admin' 
                     ? 'passport-badge-red text-[9px]' 
@@ -175,7 +175,7 @@ export const Navbar: React.FC = () => {
               <button
                 onClick={handleLogout}
                 title="ออกจากระบบ"
-                className="p-2 rounded-xl bg-red-950/40 border border-red-800/50 text-red-400 hover:bg-red-900/60 transition-all"
+                className="p-2 rounded-xl bg-red-50 border border-red-300 text-red-700 hover:bg-red-100 transition-all"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -184,7 +184,7 @@ export const Navbar: React.FC = () => {
             <Link
               to="/login"
               onClick={() => soundManager.playClick()}
-              className="px-3.5 py-1.5 rounded-xl passport-badge-red text-white text-xs font-black shadow-neon-red hover:opacity-90 transition-opacity"
+              className="px-3.5 py-1.5 rounded-xl passport-badge-red text-white text-xs font-black shadow-sm hover:opacity-90 transition-opacity"
             >
               เข้าสู่ระบบ
             </Link>
