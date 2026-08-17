@@ -7,8 +7,9 @@ import { RecentDiscoveries } from '@/components/dashboard/RecentDiscoveries';
 import { DiscoveryAlertModal } from '@/components/dashboard/DiscoveryAlertModal';
 import { CelebrationOverlay } from '@/components/dashboard/CelebrationOverlay';
 import { LiveStatusBadge } from '@/components/dashboard/LiveStatusBadge';
+import { FontSizeController } from '@/components/dashboard/FontSizeController';
 import { soundManager } from '@/lib/sound';
-import { Volume2, VolumeX, Maximize2, Minimize2, ArrowLeft, Radio } from 'lucide-react';
+import { Volume2, VolumeX, Maximize2, Minimize2, ArrowLeft, Radio, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const LEDDashboardPage: React.FC = () => {
@@ -106,48 +107,52 @@ export const LEDDashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="w-screen h-screen max-h-screen bg-mario-deepBg text-white p-2.5 sm:p-4 lg:p-5 flex flex-col justify-between select-none overflow-hidden relative led-scanlines">
+    <div className="dashboard-scalable w-screen h-screen max-h-screen bg-mario-deepBg text-white p-2.5 sm:p-4 lg:p-5 flex flex-col justify-between select-none overflow-hidden relative led-scanlines">
       
-      {/* Floating HUD Controls in Corner: Hidden completely when in Fullscreen as requested */}
-      {!isFullscreen && (
-        <div className="absolute top-4 right-4 z-30 flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity">
-          <LiveStatusBadge />
+      {/* Floating HUD Controls in Corner */}
+      <div className={`absolute top-3.5 right-4 z-30 flex items-center gap-2 transition-all ${
+        isFullscreen ? 'opacity-30 hover:opacity-100' : 'opacity-85 hover:opacity-100'
+      }`}>
+        {/* Compact Font Scale Controls with Keyboard Hotkeys */}
+        <FontSizeController compact enableHotkeys />
 
-          <button
-            onClick={toggleSound}
-            className={`p-2.5 rounded-xl border backdrop-blur-md transition-all ${
-              soundEnabled ? 'bg-mario-yellow/20 border-mario-yellow/50 text-mario-yellow' : 'bg-slate-900 border-slate-700 text-slate-500'
-            }`}
-            title={soundEnabled ? 'ปิดเสียง' : 'เปิดเสียง'}
-          >
-            {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-          </button>
+        <LiveStatusBadge />
 
-          <button
-            onClick={toggleFullscreen}
-            className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-700 text-slate-300 hover:text-white transition-all backdrop-blur-md"
-            title="เต็มจอ (Fullscreen)"
-          >
-            <Maximize2 className="w-5 h-5" />
-          </button>
+        <button
+          onClick={toggleSound}
+          className={`p-2 rounded-xl border backdrop-blur-md transition-all ${
+            soundEnabled ? 'passport-badge-yellow text-slate-900 border-mario-yellow' : 'bg-slate-900 border-slate-700 text-slate-500'
+          }`}
+          title={soundEnabled ? 'ปิดเสียง' : 'เปิดเสียง'}
+        >
+          {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+        </button>
 
-          <Link
-            to="/dashboard"
-            className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-700 text-slate-400 hover:text-white transition-all backdrop-blur-md"
-            title="กลับหน้าหลัก"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
+        <button
+          onClick={toggleFullscreen}
+          className="p-2 rounded-xl bg-slate-900/90 border border-passport-border text-slate-300 hover:text-white transition-all backdrop-blur-md"
+          title={isFullscreen ? 'ออกจากเต็มจอ (F)' : 'เต็มจอ (Fullscreen - F)'}
+        >
+          {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+        </button>
+
+        <Link
+          to="/dashboard"
+          className="p-2 rounded-xl bg-slate-900/90 border border-passport-border text-slate-400 hover:text-white transition-all backdrop-blur-md"
+          title="กลับหน้าหลัก Dashboard"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </Link>
+      </div>
+
+      {/* Top Header: 16:9 Presentation Banner with Passport Style */}
+      <div className="text-center space-y-1 mb-1">
+        <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full passport-badge-red text-white font-game text-xs tracking-wider shadow-neon-red">
+          <Star className="w-3.5 h-3.5 text-mario-yellow fill-mario-yellow" />
+          <span>{settings?.dashboard_title || 'PTECH-Sci SURVIVOR PASSPORT'}</span>
+          <span className="hidden sm:inline-block text-[10px] font-mono bg-black/30 px-1.5 py-0.2 rounded">16:9 DOME</span>
         </div>
-      )}
-
-      {/* Top Header: 16:9 Presentation Banner */}
-      <div className="text-center space-y-1 mb-2">
-        <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-mario-red/20 border border-mario-red/50 text-mario-yellow font-game text-xs tracking-wider shadow-neon-red">
-          <Radio className="w-3.5 h-3.5 text-mario-red animate-ping" />
-          <span>{settings?.dashboard_title || 'PTECH-Sci : SURVIVE IN MARIO WORLD'}</span>
-        </div>
-        <h1 className="font-game text-base sm:text-xl lg:text-2xl text-white tracking-wide mt-1.5 drop-shadow-md">
+        <h1 className="font-game text-base sm:text-lg lg:text-xl text-white tracking-wide mt-1 drop-shadow-md">
           {settings?.tagline || 'THE GAME HAS BEGUN. SCIENCE IS YOUR ONLY WAY OUT.'}
         </h1>
       </div>
@@ -158,10 +163,10 @@ export const LEDDashboardPage: React.FC = () => {
       </div>
 
       {/* Bottom Grid: 5 Core Types + Live Radar */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-stretch mt-2">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-stretch mt-1">
         
         {/* 5 Item Cards */}
-        <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-5 gap-2.5 sm:gap-3">
+        <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-5 gap-2 sm:gap-2.5">
           {itemTypes.map((t) => (
             <ItemTypeCard key={t.id} itemType={t} isLedMode={true} />
           ))}
