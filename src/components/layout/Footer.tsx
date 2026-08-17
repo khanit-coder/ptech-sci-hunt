@@ -1,8 +1,16 @@
 import React from 'react';
-import { ShieldCheck, Cpu, Terminal } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { ShieldCheck, Cpu } from 'lucide-react';
 import { isSupabaseConfigured } from '@/lib/supabase';
 
 export const Footer: React.FC = () => {
+  const location = useLocation();
+
+  // Hide footer on LED presentation mode for 100% clean full screen without scrollbars
+  if (location.pathname === '/dashboard/led') {
+    return null;
+  }
+
   return (
     <footer className="w-full border-t border-slate-800/80 bg-mario-deepBg/80 py-6 px-4 sm:px-6 lg:px-8 mt-auto">
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">

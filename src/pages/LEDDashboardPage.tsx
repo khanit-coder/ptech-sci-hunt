@@ -106,9 +106,7 @@ export const LEDDashboardPage: React.FC = () => {
   };
 
   return (
-    <div className={`w-full min-h-screen bg-mario-deepBg text-white p-3 sm:p-5 lg:p-6 flex flex-col justify-between select-none overflow-hidden relative led-scanlines ${
-      isFullscreen ? 'h-screen max-h-screen overflow-hidden' : ''
-    }`}>
+    <div className="w-screen h-screen max-h-screen bg-mario-deepBg text-white p-2.5 sm:p-4 lg:p-5 flex flex-col justify-between select-none overflow-hidden relative led-scanlines">
       
       {/* Floating HUD Controls in Corner: Hidden completely when in Fullscreen as requested */}
       {!isFullscreen && (
