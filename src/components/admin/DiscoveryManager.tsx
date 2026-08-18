@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Discovery } from '@/types';
 import { discoveryService } from '@/services/discoveryService';
 import { exportService } from '@/services/exportService';
+import { authService } from '@/services/authService';
 import { soundManager } from '@/lib/sound';
 import { formatDate } from '@/lib/utils';
 import { 
@@ -14,6 +15,7 @@ import {
   User, 
   AlertTriangle, 
   FileSpreadsheet,
+  Gift,
   X 
 } from 'lucide-react';
 
@@ -27,6 +29,21 @@ export const DiscoveryManager: React.FC<Props> = ({ discoveries, onRefresh }) =>
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [revokingDisc, setRevokingDisc] = useState<Discovery | null>(null);
   const [revokeReason, setRevokeReason] = useState('');
+  const [claimingId, setClaimingId] = useState<string | null>(null);
+
+  const handleClaimReward = async (disc: Discovery) => {
+    soundManager.playClick();
+    const profile = await authService.getCurrentUser();
+    if (!profile) return;
+
+    setClaimingId(disc.id);
+    try {
+      await discoveryService.claimReward(disc.id, profile.id);
+      onRefresh();
+    } finally {
+      setClaimingId(null);
+    }
+  };
 
   const filtered = discoveries.filter((d) => {
     const q = searchQuery.toLowerCase().trim();
@@ -182,9 +199,15 @@ export const DiscoveryManager: React.FC<Props> = ({ discoveries, onRefresh }) =>
                           <CheckCircle className="w-3.5 h-3.5" /> รับแล้ว
                         </span>
                       ) : (
-                        <span className="text-[11px] text-yellow-500">
-                          ยังไม่ได้รับ
-                        </span>
+                        <button
+                          type="button"
+                          disabled={claimingId === d.id}
+                          onClick={() => handleClaimReward(d)}
+                          className="px-2.5 py-1 rounded-lg bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 border border-yellow-500/40 text-[11px] font-bold flex items-center gap-1 transition-colors"
+                        >
+                          <Gift className="w-3 h-3 text-yellow-400" />
+                          <span>{claimingId === d.id ? 'กำลังบันทึก...' : 'มอบรางวัล'}</span>
+                        </button>
                       )}
                     </td>
 
