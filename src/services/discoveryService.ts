@@ -103,15 +103,34 @@ class DiscoveryService {
   }
 
   async getAllDiscoveries(): Promise<Discovery[]> {
-    if (isSupabaseConfigured && supabase) {
-      const { data } = await supabase
-        .from('discoveries')
-        .select('*, item:items(*, item_type:item_types(*)), student:students(*), staff_profile:profiles(*)')
-        .order('discovered_at', { ascending: false });
-      if (data) return data as Discovery[];
-    }
     this.syncFromStorage();
-    return this.discoveries;
+    let supabaseDiscoveries: Discovery[] = [];
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('discoveries')
+          .select('*, item:items(*, item_type:item_types(*)), student:students(*), staff_profile:profiles(*)')
+          .order('discovered_at', { ascending: false });
+
+        if (!error && data) {
+          supabaseDiscoveries = data as Discovery[];
+        }
+      } catch (err) {
+        console.warn('Supabase getAllDiscoveries error:', err);
+      }
+    }
+
+    // Merge discoveries by unique ID
+    const map = new Map<string, Discovery>();
+    this.discoveries.forEach((d) => map.set(d.id, d));
+    supabaseDiscoveries.forEach((d) => map.set(d.id, d));
+
+    const combined = Array.from(map.values()).sort(
+      (a, b) => new Date(b.discovered_at).getTime() - new Date(a.discovered_at).getTime()
+    );
+
+    return combined;
   }
 
   async getStaffDiscoveries(staffId: string): Promise<Discovery[]> {
@@ -163,6 +182,9 @@ class DiscoveryService {
         soundManager.playError();
       } else {
         soundManager.playDiscovery();
+        // Emit real-time discovery event so Dashboard & Radar update immediately
+        const res = data as DiscoveryResult;
+        this.emitEvent('NEW_DISCOVERY', res.discovery || null);
       }
 
       return data as DiscoveryResult;

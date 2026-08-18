@@ -275,9 +275,15 @@ class DashboardService {
     const allItems = await itemService.getAllItems();
     const itemTypes = await itemService.getItemTypes();
 
-    const confirmed = discoveries.filter((d) => d.status === 'confirmed').slice(0, limit);
+    const confirmed = discoveries.filter((d) => d.status === 'confirmed');
+    const confirmedItemIds = new Set(confirmed.map((d) => d.item_id));
 
-    return confirmed.map((d) => {
+    // Items marked 'discovered' that don't have an explicit discovery record
+    const orphanedDiscoveredItems = allItems.filter(
+      (i) => i.status === 'discovered' && !confirmedItemIds.has(i.id)
+    );
+
+    const recentList: RecentDiscoveryItem[] = confirmed.map((d) => {
       const item = d.item || allItems.find((i) => i.id === d.item_id);
       const type = itemTypes.find((t) => t.id === item?.item_type_id) || item?.item_type;
 
@@ -302,11 +308,34 @@ class DashboardService {
         student_code: d.student?.student_code || d.manual_student_code,
         student_full_name: rawFullName,
         student_display_name: maskedName,
-        class_name: d.student?.class_name,
+        class_name: d.student?.class_name || (d.manual_student_code ? `รหัส: ${d.manual_student_code}` : undefined),
         department: d.student?.department,
         staff_name: d.staff_profile?.display_name || 'Staff',
       };
     });
+
+    // Add synthetic entries for orphaned discovered items
+    orphanedDiscoveredItems.forEach((item) => {
+      const type = itemTypes.find((t) => t.id === item.item_type_id) || item.item_type;
+      recentList.push({
+        discovery_id: `synth_${item.id}`,
+        discovered_at: item.updated_at || item.created_at || new Date().toISOString(),
+        status: 'confirmed',
+        reward_claimed: false,
+        item_id: item.id,
+        item_code: item.item_code,
+        item_name: item.name,
+        type_name: type?.name || 'CORE',
+        type_icon: type?.icon || '⭐',
+        type_color: type?.color || '#FFD700',
+        student_display_name: maskStudentName('Hunter Agent', undefined, undefined, this.settings.show_student_name_mode),
+        class_name: 'ค้นพบในระบบ',
+      });
+    });
+
+    recentList.sort((a, b) => new Date(b.discovered_at).getTime() - new Date(a.discovered_at).getTime());
+
+    return recentList.slice(0, limit);
   }
 }
 
