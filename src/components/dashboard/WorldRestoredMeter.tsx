@@ -1,6 +1,6 @@
 import React from 'react';
 import { DashboardStats } from '@/types';
-import { Sparkles, Zap, Trophy, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Sparkles, Zap, Trophy, Star } from 'lucide-react';
 
 interface Props {
   stats: DashboardStats;
@@ -13,146 +13,152 @@ export const WorldRestoredMeter: React.FC<Props> = ({ stats, isLedMode = false }
 
   return (
     <div
-      className={`w-full rounded-3xl transition-all duration-700 relative overflow-hidden border-2 shadow-2xl ${
+      className={`w-full rounded-2xl sm:rounded-3xl border-2 transition-all duration-700 relative overflow-hidden ${
         isComplete
-          ? 'border-emerald-500 bg-gradient-to-br from-emerald-950 via-slate-900 to-slate-950 text-white shadow-neon-green'
-          : 'border-slate-800 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-100'
-      } ${isLedMode ? 'p-3 sm:p-4 lg:p-5' : 'p-6 sm:p-8 lg:p-10'}`}
+          ? 'border-green-500 bg-gradient-to-b from-green-50 via-white to-green-50/40 shadow-lg'
+          : 'border-passport-border bg-white shadow-passport-frame'
+      } ${isLedMode ? 'p-3 sm:p-4 my-0.5' : 'p-4 sm:p-6 lg:p-7'}`}
     >
-      {/* Glow aura */}
-      <div
-        className="absolute -right-20 -top-20 w-80 h-80 rounded-full blur-3xl pointer-events-none opacity-25"
-        style={{
-          background: isComplete
-            ? 'radial-gradient(circle, #00E676 0%, transparent 70%)'
-            : 'radial-gradient(circle, #00F0FF 0%, transparent 70%)',
-        }}
-      />
+      {/* 4 Corner Rivets for Passport Arcade Look */}
+      <div className="passport-rivet-tl" />
+      <div className="passport-rivet-tr" />
+      <div className="passport-rivet-bl" />
+      <div className="passport-rivet-br" />
 
-      {/* Top Header Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 relative z-10 mb-6 pb-4 border-b border-slate-800">
-        <div className="flex items-center gap-3">
-          <div
-            className={`w-11 h-11 sm:w-13 sm:h-13 rounded-2xl flex items-center justify-center text-xl shrink-0 shadow-lg ${
-              isComplete
-                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-neon-green'
-                : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40'
-            }`}
-          >
-            {isComplete ? <CheckCircle2 className="w-6 h-6 animate-bounce" /> : <Zap className="w-6 h-6 animate-pulse" />}
+      {/* Background Blueprint/Grid Matrix */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#3a607310_1px,transparent_1px),linear-gradient(to_bottom,#3a607310_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none opacity-60" />
+
+      {/* Top Status Header Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-2 relative z-10 mb-3 sm:mb-4 pb-2 border-b-2 border-slate-200">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl passport-badge-blue flex items-center justify-center text-white animate-bounce shadow-md">
+            <Zap className="w-5 h-5" />
           </div>
           <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-game text-xs sm:text-sm text-mario-yellow tracking-wider">
-                WORLD STABILITY REACTOR
-              </h3>
-              <span className="px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-[10px] font-mono font-bold text-cyan-300">
-                MISSION CORE
+            <div className="flex items-center gap-2">
+              <span className="font-game text-xs sm:text-sm text-slate-900 tracking-wider">
+                WORLD STABILITY CORE
+              </span>
+              <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded bg-sky-100 text-sky-800 border border-sky-300 text-[10px] font-mono font-bold">
+                PASSPORT MISSION
               </span>
             </div>
-            <p className="text-xs sm:text-sm text-slate-300 font-medium mt-0.5">
-              {isComplete
+            <p className="text-xs text-slate-600 font-medium">
+              {stats.mission_status === 'RESTORATION COMPLETE'
                 ? '⭐ กู้คืนมิติโลก PTECH สำเร็จ 100% สมบูรณ์แบบ!'
                 : 'ระดับพลังงานการฟื้นฟูมิติโลก PTECH จากแกนวิทยาศาสตร์'}
             </p>
           </div>
         </div>
 
-        {/* Mission Status Badge */}
+        {/* Status Badge */}
         <div
-          className={`px-4 py-2 rounded-2xl font-mono text-xs sm:text-sm font-black tracking-wider uppercase border flex items-center gap-2 shadow-lg ${
+          className={`px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl font-mono text-xs font-black tracking-wide uppercase border flex items-center gap-1.5 shadow-md ${
             stats.mission_status === 'RESTORATION COMPLETE'
-              ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-extrabold shadow-neon-green'
+              ? 'passport-badge-green shadow-sm'
               : stats.mission_status === 'PAUSED'
-              ? 'bg-yellow-500 text-slate-950 border-yellow-400'
-              : 'bg-red-950/80 text-red-400 border-red-800 animate-pulse'
+              ? 'passport-badge-yellow text-slate-900'
+              : 'passport-badge-red animate-pulse'
           }`}
         >
-          <span className="w-2.5 h-2.5 rounded-full bg-current animate-ping" />
+          <span className="w-2 h-2 rounded-full bg-current animate-ping" />
           <span>{stats.mission_status}</span>
         </div>
       </div>
 
-      {/* Main Center Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center relative z-10 my-2">
-        {/* Giant Restored Percentage */}
+      {/* Centerpiece: Super Giant Percentage & Counter Pods */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center relative z-10 my-1">
+        {/* Super Giant Restored Percentage */}
         <div className="md:col-span-7 flex flex-col items-center md:items-start text-center md:text-left">
-          <div className="flex items-baseline gap-3 flex-wrap justify-center md:justify-start">
+          <div className="flex items-baseline gap-2 sm:gap-4 flex-wrap justify-center md:justify-start">
             <span
-              className={`font-game text-6xl sm:text-7xl lg:text-8xl tracking-tight font-black transition-all drop-shadow-md ${
-                isComplete ? 'text-emerald-400' : 'text-cyan-400'
+              className={`font-game text-7xl sm:text-8xl lg:text-[105px] tracking-tight font-black leading-none transition-all ${
+                isComplete ? 'text-green-600' : 'text-mario-blue'
               }`}
             >
               {percentage.toFixed(0)}%
             </span>
-            <span className="font-game text-xl sm:text-2xl lg:text-3xl text-slate-200 uppercase tracking-widest">
+            <span className="font-game text-xl sm:text-2xl lg:text-3xl text-slate-800 uppercase tracking-widest self-end pb-1">
               RESTORED
             </span>
           </div>
 
-          <p className="text-sm sm:text-base text-slate-300 mt-2 font-semibold">
+          <p className="text-xs sm:text-sm text-slate-700 mt-1 sm:mt-2 font-semibold">
             ฟื้นคืนมิติแล้ว{' '}
-            <strong className="text-mario-yellow text-lg sm:text-xl font-mono px-1">
+            <span className="text-mario-blue font-black text-lg sm:text-xl font-mono px-1">
               {stats.discovered_items}
-            </strong>{' '}
+            </span>{' '}
             จากเป้าหมาย{' '}
-            <strong className="text-white text-lg sm:text-xl font-mono px-1">
+            <span className="text-slate-900 font-black text-lg sm:text-xl font-mono px-1">
               {stats.total_items}
-            </strong>{' '}
+            </span>{' '}
             ชิ้นส่วน
           </p>
         </div>
 
-        {/* 2 Metric Pods */}
-        <div className="md:col-span-5 grid grid-cols-2 gap-4">
-          <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/90 border-2 border-amber-500/40 flex flex-col items-center justify-center text-center shadow-xl hover:border-amber-500 transition-all">
-            <div className="flex items-center gap-1.5 text-amber-400 mb-1 font-bold text-xs">
-              <Trophy className="w-4 h-4 text-amber-400" />
-              <span>DISCOVERED</span>
+        {/* Item Counter Metric Pods */}
+        <div className="md:col-span-5 grid grid-cols-2 gap-3">
+          <div className="passport-card-inner p-3 sm:p-4 flex flex-col items-center justify-center text-center shadow-xs border-2 border-passport-border bg-amber-50/60 hover:bg-amber-50 transition-all">
+            <div className="flex items-center gap-1 text-amber-900 mb-0.5">
+              <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+              <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider">
+                DISCOVERED
+              </span>
             </div>
             <div className="flex items-baseline gap-1">
-              <span className="font-mono text-3xl sm:text-4xl font-extrabold text-amber-400">
+              <span className="font-mono text-3xl sm:text-4xl font-black text-amber-600">
                 {stats.discovered_items}
               </span>
-              <span className="text-slate-500 font-mono text-sm">/ {stats.total_items}</span>
+              <span className="text-slate-500 font-mono text-xs sm:text-sm">
+                / {stats.total_items}
+              </span>
             </div>
-            <span className="text-[11px] text-emerald-400 font-bold mt-1">ค้นพบแล้ว</span>
+            <span className="text-[10px] sm:text-[11px] text-green-700 font-bold mt-0.5">
+              ค้นพบแล้ว
+            </span>
           </div>
 
-          <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/90 border-2 border-red-500/40 flex flex-col items-center justify-center text-center shadow-xl hover:border-red-500 transition-all">
-            <div className="flex items-center gap-1.5 text-red-400 mb-1 font-bold text-xs">
-              <Sparkles className="w-4 h-4 text-red-400" />
-              <span>REMAINING</span>
+          <div className="passport-card-inner p-3 sm:p-4 flex flex-col items-center justify-center text-center shadow-xs border-2 border-passport-border bg-red-50/60 hover:bg-red-50 transition-all">
+            <div className="flex items-center gap-1 text-red-900 mb-0.5">
+              <Sparkles className="w-3.5 h-3.5 text-red-500" />
+              <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider">
+                REMAINING
+              </span>
             </div>
-            <span className="font-mono text-3xl sm:text-4xl font-extrabold text-red-400">
+            <span className="font-mono text-3xl sm:text-4xl font-black text-red-600">
               {stats.remaining_items}
             </span>
-            <span className="text-[11px] text-slate-400 font-medium mt-1">ยังคงซ่อนอยู่</span>
+            <span className="text-[10px] sm:text-[11px] text-slate-600 font-medium mt-0.5">
+              ยังคงซ่อนอยู่
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Energy Bar */}
-      <div className="relative z-10 mt-6 sm:mt-8">
-        <div className="flex justify-between items-center text-xs font-mono font-bold text-slate-300 mb-2">
-          <span className="flex items-center gap-1.5 text-white">
-            <Sparkles className="w-4 h-4 text-mario-yellow animate-spin" />
+      {/* Energy Progress Bar */}
+      <div className="relative z-10 mt-3 sm:mt-4">
+        <div className="flex justify-between items-center text-[11px] sm:text-xs font-mono font-black text-slate-700 mb-1">
+          <span className="flex items-center gap-1.5 text-slate-900 font-bold">
+            <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-spin" />
             DIMENSIONAL ENERGY STABILIZER
           </span>
-          <span className="text-emerald-400 font-mono font-bold">
+          <span className="text-green-700 font-mono font-black">
             {stats.discovered_items} / {stats.total_items} RECOVERED
           </span>
         </div>
 
-        <div className="h-6 sm:h-7 w-full bg-slate-950 rounded-2xl p-1 border border-slate-800 relative overflow-hidden shadow-inner">
+        <div className="h-5 sm:h-6 w-full bg-slate-100 rounded-xl p-0.5 border-2 border-passport-border relative overflow-hidden shadow-inner">
           <div
-            className={`h-full rounded-xl transition-all duration-1000 ease-out shadow-lg ${
-              isComplete
-                ? 'bg-gradient-to-r from-emerald-500 to-green-400 shadow-neon-green'
-                : 'bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500'
-            }`}
+            className="h-full rounded-lg energy-bar-fill transition-all duration-1000 ease-out shadow-xs"
             style={{ width: `${Math.max(4, percentage)}%` }}
           />
+
+          {/* Grid lines */}
+          <div className="absolute inset-0 flex justify-between px-3 sm:px-4 pointer-events-none opacity-30">
+            {[...Array(9)].map((_, i) => (
+              <div key={i} className="w-0.5 h-full bg-slate-900/30" />
+            ))}
+          </div>
         </div>
       </div>
     </div>
