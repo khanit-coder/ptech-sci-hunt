@@ -67,9 +67,13 @@ class ExportService {
       'ชื่อ': s.first_name,
       'นามสกุล': s.last_name,
       'ชื่อเต็ม': s.full_name,
+      'ชื่อเล่น': s.nickname || '',
+      'โรงเรียน/สถาบัน': s.school_name || '',
       'ชั้นเรียน': s.class_name || '',
       'แผนกวิชา': s.department || '',
       'ระดับชั้น': s.level || '',
+      'เบอร์โทรศัพท์': s.phone || '',
+      'QR Code Token': s.qr_token || s.external_id || '',
       'สถานะ': s.student_status || 'active',
     }));
 

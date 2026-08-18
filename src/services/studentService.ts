@@ -1,4 +1,4 @@
-import { Student, ImportPreviewRow } from '@/types';
+import { Student, ImportPreviewRow, RegisterExternalStudentInput } from '@/types';
 import { StudentProvider, StudentVerificationResult } from '@/adapters/StudentProvider';
 import { MockStudentProvider } from '@/adapters/MockStudentProvider';
 import { ExternalStudentProvider } from '@/adapters/ExternalStudentProvider';
@@ -31,13 +31,81 @@ class StudentService {
     return this.provider.getStudentByCode(code);
   }
 
+  async findStudentByQr(token: string): Promise<Student | null> {
+    const res = await this.verifyStudentQr(token);
+    if (res.success && res.student) {
+      return res.student;
+    }
+    const all = await this.getAllStudents();
+    const clean = token.trim().toLowerCase();
+    const found = all.find(
+      (s) =>
+        s.student_code.toLowerCase() === clean ||
+        (s.external_id && s.external_id.toLowerCase() === clean) ||
+        (s.qr_token && s.qr_token.toLowerCase() === clean)
+    );
+    return found || null;
+  }
+
+  async registerExternalStudent(input: RegisterExternalStudentInput): Promise<{ success: boolean; student?: Student; message: string }> {
+    const cleanToken = input.qr_token.trim();
+    if (!cleanToken) {
+      return { success: false, message: 'กรุณาระบุรหัส QR Code' };
+    }
+    if (!input.first_name.trim()) {
+      return { success: false, message: 'กรุณาระบุชื่อนักเรียน' };
+    }
+
+    const shortId = cleanToken.replace(/[^a-zA-Z0-9]/g, '').slice(-4).toUpperCase() || Math.random().toString(36).substring(2, 6).toUpperCase();
+    const generatedCode = input.student_code?.trim() || `EXT-${shortId}`;
+
+    const studentRecord: Student = {
+      id: 'ext_' + Math.random().toString(36).substring(2, 9),
+      student_code: generatedCode,
+      first_name: input.first_name.trim(),
+      last_name: input.last_name?.trim() || '',
+      full_name: `${input.first_name.trim()} ${input.last_name?.trim() || ''}`.trim(),
+      nickname: input.nickname?.trim() || undefined,
+      school_name: input.school_name?.trim() || 'ภายนอก (External)',
+      class_name: input.class_name?.trim() || input.level?.trim() || 'นักเรียนภายนอก',
+      department: input.department?.trim() || input.school_name?.trim() || 'ภายนอก',
+      level: input.level?.trim() || 'ภายนอก',
+      student_status: 'external',
+      external_id: cleanToken,
+      qr_token: cleanToken,
+      phone: input.phone?.trim() || undefined,
+      notes: input.notes?.trim() || undefined,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase.from('students').upsert(studentRecord, { onConflict: 'student_code' }).select().single();
+        if (!error && data) {
+          return { success: true, student: data as Student, message: 'ลงทะเบียนนักเรียนภายนอกสำเร็จ!' };
+        }
+      } catch (err) {
+        console.warn('Supabase registerExternalStudent error:', err);
+      }
+    }
+
+    // In-memory / localStorage Mock
+    if (this.provider instanceof MockStudentProvider) {
+      const saved = this.provider.upsertStudent(studentRecord);
+      return { success: true, student: saved, message: 'ลงทะเบียนนักเรียนภายนอกสำเร็จ!' };
+    }
+
+    return { success: true, student: studentRecord, message: 'ลงทะเบียนนักเรียนภายนอกสำเร็จ!' };
+  }
+
   async searchStudents(query: string, limit = 15): Promise<Student[]> {
     if (isSupabaseConfigured && supabase) {
       const q = query.trim();
       const { data } = await supabase
         .from('students')
         .select('*')
-        .or(`student_code.ilike.%${q}%,first_name.ilike.%${q}%,last_name.ilike.%${q}%,full_name.ilike.%${q}%`)
+        .or(`student_code.ilike.%${q}%,first_name.ilike.%${q}%,last_name.ilike.%${q}%,full_name.ilike.%${q}%,school_name.ilike.%${q}%,phone.ilike.%${q}%`)
         .limit(limit);
       if (data) return data as Student[];
     }
@@ -52,7 +120,7 @@ class StudentService {
         .from('students')
         .select('*')
         .order('student_code', { ascending: true })
-        .limit(200);
+        .limit(300);
       if (data) return data as Student[];
     }
     const res = await this.provider.searchStudents({ limit: 500 });

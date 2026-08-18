@@ -212,7 +212,14 @@ class DiscoveryService {
     let student = undefined;
     if (student_id) {
       const allStudents = await studentService.getAllStudents();
-      student = allStudents.find((s) => s.id === student_id || s.student_code === student_id);
+      student = allStudents.find(
+        (s) =>
+          s.id === student_id ||
+          s.student_code === student_id ||
+          s.external_id === student_id ||
+          s.qr_token === student_id ||
+          (s.student_code && s.student_code.toLowerCase() === student_id.toLowerCase())
+      );
     }
 
     const currentProfile = await authService.getCurrentUser();

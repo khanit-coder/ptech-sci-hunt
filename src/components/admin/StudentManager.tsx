@@ -3,6 +3,7 @@ import { Student } from '@/types';
 import { studentService } from '@/services/studentService';
 import { exportService } from '@/services/exportService';
 import { soundManager } from '@/lib/sound';
+import { ExternalStudentRegisterModal } from '@/components/staff/ExternalStudentRegisterModal';
 import { 
   Users, 
   Search, 
@@ -12,7 +13,9 @@ import {
   UserCheck, 
   FileSpreadsheet, 
   Trash2,
-  X 
+  X,
+  UserPlus,
+  QrCode
 } from 'lucide-react';
 
 interface Props {
@@ -24,6 +27,7 @@ interface Props {
 export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImportWizard }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [isRegisterExtOpen, setIsRegisterExtOpen] = useState(false);
   const [formCode, setFormCode] = useState('');
   const [formFirst, setFormFirst] = useState('');
   const [formLast, setFormLast] = useState('');
@@ -35,6 +39,10 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
     return (
       s.student_code.toLowerCase().includes(q) ||
       s.full_name.toLowerCase().includes(q) ||
+      (s.nickname && s.nickname.toLowerCase().includes(q)) ||
+      (s.school_name && s.school_name.toLowerCase().includes(q)) ||
+      (s.phone && s.phone.includes(q)) ||
+      (s.qr_token && s.qr_token.toLowerCase().includes(q)) ||
       s.department?.toLowerCase().includes(q) ||
       s.class_name?.toLowerCase().includes(q)
     );
@@ -82,13 +90,26 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="ค้นหารหัสนักเรียน, ชื่อ, สาขาวิชา..."
+            placeholder="ค้นหารหัสนักเรียน, ชื่อ, โรงเรียน, เบอร์โทร..."
             className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-mario-orange"
           />
         </div>
 
         {/* Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Register External QR Button */}
+          <button
+            type="button"
+            onClick={() => {
+              soundManager.playClick();
+              setIsRegisterExtOpen(true);
+            }}
+            className="px-3.5 py-2 rounded-xl bg-emerald-950/80 border border-emerald-500/80 text-emerald-300 hover:bg-emerald-900 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
+          >
+            <UserPlus className="w-3.5 h-3.5 text-mario-green" />
+            <span>ลงทะเบียน QR ภายนอก</span>
+          </button>
+
           {/* Export Dropdown */}
           <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-xl border border-slate-700">
             <span className="text-[11px] font-mono font-bold text-slate-400 px-2 flex items-center gap-1">
@@ -140,9 +161,9 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
               <tr>
                 <th className="py-3.5 px-4">รหัสนักเรียน</th>
                 <th className="py-3.5 px-4">ชื่อ - นามสกุล</th>
-                <th className="py-3.5 px-4">ห้องเรียน</th>
-                <th className="py-3.5 px-4">แผนกวิชา</th>
-                <th className="py-3.5 px-4">ระดับ</th>
+                <th className="py-3.5 px-4">โรงเรียน / ห้องเรียน</th>
+                <th className="py-3.5 px-4">แผนก / สังกัด</th>
+                <th className="py-3.5 px-4">เบอร์โทร / QR Token</th>
                 <th className="py-3.5 px-4">สถานะ</th>
               </tr>
             </thead>
@@ -161,21 +182,37 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
                       {s.student_code}
                     </td>
                     <td className="py-3 px-4 text-white font-semibold">
-                      {s.full_name}
+                      <div className="flex items-center gap-1.5">
+                        <span>{s.full_name}</span>
+                        {s.nickname && <span className="text-slate-400 text-[11px]">({s.nickname})</span>}
+                      </div>
                     </td>
                     <td className="py-3 px-4 text-slate-300">
-                      {s.class_name || '-'}
+                      {s.school_name || s.class_name || '-'}
                     </td>
                     <td className="py-3 px-4 text-slate-300">
-                      {s.department || '-'}
+                      {s.department || s.level || '-'}
                     </td>
-                    <td className="py-3 px-4 text-slate-400">
-                      {s.level || 'ปวช.'}
+                    <td className="py-3 px-4 font-mono text-[11px]">
+                      {s.phone ? (
+                        <span className="text-mario-green font-bold block">{s.phone}</span>
+                      ) : null}
+                      {s.qr_token ? (
+                        <span className="text-slate-500 truncate block max-w-[140px]">QR: {s.qr_token}</span>
+                      ) : (
+                        <span className="text-slate-600">-</span>
+                      )}
                     </td>
                     <td className="py-3 px-4">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-mario-green/20 text-mario-green">
-                        ACTIVE
-                      </span>
+                      {s.student_status === 'external' ? (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950/90 text-purple-300 border border-purple-700">
+                          EXTERNAL
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-mario-green/20 text-mario-green">
+                          ACTIVE
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -265,6 +302,18 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
             </form>
           </div>
         </div>
+      )}
+
+      {/* External Student Register Modal */}
+      {isRegisterExtOpen && (
+        <ExternalStudentRegisterModal
+          isOpen={isRegisterExtOpen}
+          onClose={() => setIsRegisterExtOpen(false)}
+          onSuccess={() => {
+            setIsRegisterExtOpen(false);
+            onRefresh();
+          }}
+        />
       )}
     </div>
   );

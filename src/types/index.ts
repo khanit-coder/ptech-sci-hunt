@@ -71,10 +71,29 @@ export interface Student {
   class_name?: string;
   department?: string;
   level?: string;
-  student_status?: string;
+  student_status?: 'active' | 'external' | 'disabled' | string;
   external_id?: string;
+  phone?: string;
+  school_name?: string;
+  nickname?: string;
+  qr_token?: string;
+  notes?: string;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface RegisterExternalStudentInput {
+  qr_token: string;
+  first_name: string;
+  last_name: string;
+  nickname?: string;
+  school_name?: string;
+  level?: string;
+  class_name?: string;
+  department?: string;
+  phone?: string;
+  student_code?: string;
+  notes?: string;
 }
 
 export interface Discovery {

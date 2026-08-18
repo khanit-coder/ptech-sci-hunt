@@ -149,12 +149,27 @@ export class MockStudentProvider implements StudentProvider {
     this.save();
   }
 
-  // Handle dynamic QR format e.g. "STU:66209010001:1710000000" or raw student code
+  public upsertStudent(student: Student): Student {
+    const idx = this.students.findIndex(
+      (s) => s.id === student.id || s.student_code === student.student_code || (student.qr_token && s.qr_token === student.qr_token)
+    );
+    if (idx >= 0) {
+      this.students[idx] = { ...this.students[idx], ...student, updated_at: new Date().toISOString() };
+      this.save();
+      return this.students[idx];
+    } else {
+      this.students.unshift(student);
+      this.save();
+      return student;
+    }
+  }
+
+  // Handle dynamic QR format e.g. "STU:66209010001:1710000000" or raw student code or external QR token
   async getStudentByQrToken(qrToken: string): Promise<StudentVerificationResult> {
     const now = Date.now();
     const token = qrToken.trim();
 
-    // Check if token is a timed dynamic QR e.g., "PTECH_STU:66209010001:1710123456789"
+    // 1. Check if token is a timed dynamic QR e.g., "PTECH_STU:66209010001:1710123456789"
     if (token.startsWith('PTECH_STU:') || token.startsWith('STU:')) {
       const parts = token.split(':');
       const studentCode = parts[1];
@@ -176,13 +191,32 @@ export class MockStudentProvider implements StudentProvider {
       return this.getStudentByCode(studentCode);
     }
 
-    // Direct student code QR
+    // 2. Check if token matches registered external student or QR token
+    const extStudent = this.students.find(
+      (s) =>
+        s.qr_token === token ||
+        s.external_id === token ||
+        (s.qr_token && s.qr_token.toLowerCase() === token.toLowerCase()) ||
+        (s.external_id && s.external_id.toLowerCase() === token.toLowerCase())
+    );
+
+    if (extStudent) {
+      return {
+        success: true,
+        code: 'VALID',
+        student: extStudent,
+        message: `ยืนยันตัวตนน${extStudent.student_status === 'external' ? 'ักเรียนภายนอก' : 'ักเรียน'}สำเร็จ`,
+        timestamp: new Date().toISOString(),
+      };
+    }
+
+    // 3. Direct student code QR
     return this.getStudentByCode(token);
   }
 
   async getStudentByCode(studentCode: string): Promise<StudentVerificationResult> {
     const cleanCode = studentCode.trim();
-    const student = this.students.find((s) => s.student_code === cleanCode);
+    const student = this.students.find((s) => s.student_code === cleanCode || s.student_code.toLowerCase() === cleanCode.toLowerCase());
 
     if (!student) {
       return {
@@ -197,7 +231,7 @@ export class MockStudentProvider implements StudentProvider {
       success: true,
       code: 'VALID',
       student,
-      message: 'ยืนยันตัวตนนopenสำเร็จ',
+      message: 'ยืนยันตัวตนนักเรียนสำเร็จ',
       timestamp: new Date().toISOString(),
     };
   }
@@ -213,6 +247,10 @@ export class MockStudentProvider implements StudentProvider {
           s.first_name.toLowerCase().includes(q) ||
           s.last_name.toLowerCase().includes(q) ||
           s.full_name.toLowerCase().includes(q) ||
+          (s.nickname && s.nickname.toLowerCase().includes(q)) ||
+          (s.school_name && s.school_name.toLowerCase().includes(q)) ||
+          (s.phone && s.phone.includes(q)) ||
+          (s.qr_token && s.qr_token.toLowerCase().includes(q)) ||
           s.department?.toLowerCase().includes(q) ||
           s.class_name?.toLowerCase().includes(q)
       );
