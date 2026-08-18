@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { LEDDashboardPage } from '@/pages/LEDDashboardPage';
@@ -41,6 +42,7 @@ export const App: React.FC = () => {
           </Routes>
         </main>
         <Footer />
+        <MobileBottomNav />
       </div>
     </BrowserRouter>
   );

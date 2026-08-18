@@ -187,14 +187,21 @@ export const StaffScanner: React.FC<Props> = ({
       const errMsg = err?.toString?.() || '';
 
       if (errMsg.includes('NotReadableError') || errMsg.includes('Could not start video source')) {
-        // Camera in use by another tab/app — try to auto-retry once after short delay
-        if (retryCount < 2) {
-          setErrorMsg(`กล้องถูกใช้งานอยู่ กำลังลองใหม่... (${retryCount + 1}/2)`);
+        if (retryCount === 0) {
+          // First retry: try the OPPOSITE facing (front vs back) — this fixes most NotReadableError cases
+          const alternateFacing = (cameraConfig?.facing || facingMode) === 'environment' ? 'user' : 'environment';
+          setFacingMode(alternateFacing);
+          setErrorMsg('กำลังลองกล้องอีกตัว...');
+          await new Promise(r => setTimeout(r, 800));
+          return startCamera({ facing: alternateFacing }, 1);
+        } else if (retryCount === 1) {
+          // Second retry: wait and try again with same config
+          setErrorMsg('กำลังลองเปิดกล้องใหม่...');
           await new Promise(r => setTimeout(r, 1500));
-          return startCamera(cameraConfig, retryCount + 1);
+          return startCamera(cameraConfig, 2);
         }
         setErrorMsg(
-          'กล้องถูกแอปอื่นใช้งานอยู่ — ปิด tab/แอปอื่นที่ใช้กล้อง แล้วกด "เปิดกล้อง" อีกครั้ง หรือใช้วิธีถ่ายรูปแทน'
+          'กล้องถูกแอปอื่นใช้งานอยู่ — ปิด tab/แอปอื่น แล้วกด "เปิดกล้อง" หรือใช้ปุ่ม "ถ่ายรูป/อัปโหลด" แทน'
         );
       } else if (errMsg.includes('NotAllowedError') || errMsg.includes('Permission')) {
         setErrorMsg('ไม่ได้รับสิทธิ์เข้าถึงกล้อง กรุณากดอนุญาตการใช้กล้องในเบราว์เซอร์');

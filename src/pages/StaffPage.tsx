@@ -94,22 +94,27 @@ export const StaffPage: React.FC = () => {
 
     setScannedItem(item);
 
-    // If item is already discovered, show already discovered state immediately
+    // If item is already discovered, verify there's actually a discovery record
     if (item.status === 'discovered') {
       const all = await discoveryService.getAllDiscoveries();
       const existing = all.find((d) => d.item_id === item.id && d.status === 'confirmed');
-      setDiscoveryResult({
-        success: false,
-        code: 'ALREADY_DISCOVERED',
-        message: 'ไอเทมนี้ถูกค้นพบไปแล้ว!',
-        item_code: item.item_code,
-        item_name: item.name,
-        discovered_at: existing?.discovered_at,
-        discovered_by: existing?.student?.full_name || existing?.manual_student_name || 'Hunter',
-        verified_by: existing?.staff_profile?.display_name || 'Staff Point',
-      });
-      setActiveStep('already_discovered');
-      return;
+      
+      // Only block if there's actually a confirmed discovery record
+      if (existing) {
+        setDiscoveryResult({
+          success: false,
+          code: 'ALREADY_DISCOVERED',
+          message: 'ไอเทมนี้ถูกค้นพบไปแล้ว!',
+          item_code: item.item_code,
+          item_name: item.name,
+          discovered_at: existing.discovered_at,
+          discovered_by: existing.student?.full_name || existing.manual_student_name || 'Hunter',
+          verified_by: existing.staff_profile?.display_name || 'Staff',
+        });
+        setActiveStep('already_discovered');
+        return;
+      }
+      // No discovery record found — item status is stale/inconsistent, allow staff to proceed
     }
 
     setActiveStep('preview_item');
