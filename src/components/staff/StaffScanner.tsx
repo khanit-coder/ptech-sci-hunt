@@ -7,8 +7,6 @@ import {
   Sparkles, 
   AlertCircle, 
   RefreshCw, 
-  Flashlight, 
-  FlashlightOff, 
   Image as ImageIcon, 
   FlipHorizontal, 
   HelpCircle, 
@@ -411,22 +409,7 @@ export const StaffScanner: React.FC<Props> = ({
               <span>สลับกล้อง</span>
             </button>
 
-            {/* Torch Button */}
-            {hasTorchCapability && (
-              <button
-                type="button"
-                onClick={toggleTorch}
-                className={`px-3 py-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all ${
-                  torchOn
-                    ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-neon-yellow'
-                    : 'bg-slate-800/90 border-slate-700 text-slate-200 hover:bg-slate-700'
-                }`}
-                title="เปิด/ปิดไฟฉาย"
-              >
-                {torchOn ? <Flashlight className="w-3.5 h-3.5 text-slate-950" /> : <FlashlightOff className="w-3.5 h-3.5 text-slate-400" />}
-                <span>{torchOn ? 'ปิดไฟ' : 'เปิดไฟ'}</span>
-              </button>
-            )}
+
 
             {/* Stop Camera Button */}
             <button
