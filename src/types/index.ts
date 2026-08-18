@@ -190,7 +190,9 @@ export interface ImportPreviewRow {
   first_name: string;
   last_name: string;
   class_name?: string;
+  school_name?: string;
   department?: string;
+  phone?: string;
   level?: string;
   is_valid: boolean;
   error?: string;
