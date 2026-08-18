@@ -114,18 +114,27 @@ export const StaffScanner: React.FC<Props> = ({
     onScanSuccess(decodedText.trim());
   };
 
-  const startCamera = async (cameraConfig?: { deviceId?: string; facing?: 'environment' | 'user' }) => {
+  const startCamera = async (cameraConfig?: { deviceId?: string; facing?: 'environment' | 'user' }, retryCount = 0) => {
     soundManager.playClick();
     setErrorMsg(null);
     setShowPermissionHelp(false);
 
     try {
-      const scanner = getOrCreateScanner();
-
-      // If already scanning, stop first
-      if (scanner.isScanning) {
-        await scanner.stop();
+      // Stop & destroy existing scanner before creating new one
+      if (scannerRef.current) {
+        try {
+          if (scannerRef.current.isScanning) {
+            await scannerRef.current.stop();
+          }
+          scannerRef.current.clear();
+        } catch {
+          // ignore cleanup errors
+        }
+        scannerRef.current = null;
       }
+
+      const scanner = new Html5Qrcode(scannerContainerId, { verbose: false });
+      scannerRef.current = scanner;
 
       // Check available cameras
       try {
@@ -176,7 +185,18 @@ export const StaffScanner: React.FC<Props> = ({
     } catch (err: any) {
       console.error('Camera start error:', err);
       const errMsg = err?.toString?.() || '';
-      if (errMsg.includes('NotAllowedError') || errMsg.includes('Permission')) {
+
+      if (errMsg.includes('NotReadableError') || errMsg.includes('Could not start video source')) {
+        // Camera in use by another tab/app — try to auto-retry once after short delay
+        if (retryCount < 2) {
+          setErrorMsg(`กล้องถูกใช้งานอยู่ กำลังลองใหม่... (${retryCount + 1}/2)`);
+          await new Promise(r => setTimeout(r, 1500));
+          return startCamera(cameraConfig, retryCount + 1);
+        }
+        setErrorMsg(
+          'กล้องถูกแอปอื่นใช้งานอยู่ — ปิด tab/แอปอื่นที่ใช้กล้อง แล้วกด "เปิดกล้อง" อีกครั้ง หรือใช้วิธีถ่ายรูปแทน'
+        );
+      } else if (errMsg.includes('NotAllowedError') || errMsg.includes('Permission')) {
         setErrorMsg('ไม่ได้รับสิทธิ์เข้าถึงกล้อง กรุณากดอนุญาตการใช้กล้องในเบราว์เซอร์');
         setShowPermissionHelp(true);
       } else if (errMsg.includes('NotFoundError')) {
