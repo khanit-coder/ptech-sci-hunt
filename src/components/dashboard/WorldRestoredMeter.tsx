@@ -1,6 +1,6 @@
 import React from 'react';
 import { DashboardStats } from '@/types';
-import { Sparkles, Zap, Trophy, Star } from 'lucide-react';
+import { Sparkles, Zap, Star } from 'lucide-react';
 
 interface Props {
   stats: DashboardStats;
@@ -39,9 +39,6 @@ export const WorldRestoredMeter: React.FC<Props> = ({ stats, isLedMode = false }
               <span className="font-game text-xs sm:text-sm text-slate-900 tracking-wider">
                 WORLD STABILITY CORE
               </span>
-              <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded bg-sky-100 text-sky-800 border border-sky-300 text-[10px] font-mono font-bold">
-                PASSPORT MISSION
-              </span>
             </div>
             <p className="text-xs text-slate-600 font-medium">
               {stats.mission_status === 'RESTORATION COMPLETE'
@@ -53,7 +50,7 @@ export const WorldRestoredMeter: React.FC<Props> = ({ stats, isLedMode = false }
 
         {/* Status Badge */}
         <div
-          className={`px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl font-mono text-xs font-black tracking-wide uppercase border flex items-center gap-1.5 shadow-md ${
+          className={`px-3.5 py-1.5 rounded-xl font-mono text-xs font-black tracking-wide uppercase border flex items-center gap-1.5 shadow-md ${
             stats.mission_status === 'RESTORATION COMPLETE'
               ? 'passport-badge-green shadow-sm'
               : stats.mission_status === 'PAUSED'
@@ -66,10 +63,10 @@ export const WorldRestoredMeter: React.FC<Props> = ({ stats, isLedMode = false }
         </div>
       </div>
 
-      {/* Centerpiece: Super Giant Percentage & Counter Pods */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center relative z-10 my-1">
+      {/* Centerpiece: Super Giant Percentage & Expanded Counter Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-center relative z-10 my-1">
         {/* Super Giant Restored Percentage */}
-        <div className="md:col-span-7 flex flex-col items-center md:items-start text-center md:text-left">
+        <div className="md:col-span-6 flex flex-col items-center md:items-start text-center md:text-left">
           <div className="flex items-baseline gap-2 sm:gap-4 flex-wrap justify-center md:justify-start">
             <span
               className={`font-game text-7xl sm:text-8xl lg:text-[105px] tracking-tight font-black leading-none transition-all ${
@@ -96,39 +93,39 @@ export const WorldRestoredMeter: React.FC<Props> = ({ stats, isLedMode = false }
           </p>
         </div>
 
-        {/* Item Counter Metric Pods */}
-        <div className="md:col-span-5 grid grid-cols-2 gap-3">
-          <div className="passport-card-inner p-3 sm:p-4 flex flex-col items-center justify-center text-center shadow-xs border-2 border-passport-border bg-amber-50/60 hover:bg-amber-50 transition-all">
-            <div className="flex items-center gap-1 text-amber-900 mb-0.5">
-              <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-              <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider">
+        {/* Significantly Enlarged Item Counter Metric Pods & Big Numbers */}
+        <div className="md:col-span-6 grid grid-cols-2 gap-4">
+          <div className="passport-card-inner p-4 sm:p-6 lg:p-7 flex flex-col items-center justify-center text-center shadow-md border-2 border-passport-border bg-amber-50/80 hover:bg-amber-50 transition-all rounded-2xl">
+            <div className="flex items-center gap-1.5 text-amber-900 mb-1">
+              <Star className="w-4.5 h-4.5 text-amber-500 fill-amber-500" />
+              <span className="text-xs sm:text-sm font-black uppercase tracking-wider">
                 DISCOVERED
               </span>
             </div>
-            <div className="flex items-baseline gap-1">
-              <span className="font-mono text-3xl sm:text-4xl font-black text-amber-600">
+            <div className="flex items-baseline gap-1 my-1">
+              <span className="font-mono text-4xl sm:text-5xl lg:text-6xl font-black text-amber-600">
                 {stats.discovered_items}
               </span>
-              <span className="text-slate-500 font-mono text-xs sm:text-sm">
+              <span className="text-slate-500 font-mono text-base sm:text-lg font-bold">
                 / {stats.total_items}
               </span>
             </div>
-            <span className="text-[10px] sm:text-[11px] text-green-700 font-bold mt-0.5">
+            <span className="text-xs sm:text-sm text-green-700 font-extrabold mt-1">
               ค้นพบแล้ว
             </span>
           </div>
 
-          <div className="passport-card-inner p-3 sm:p-4 flex flex-col items-center justify-center text-center shadow-xs border-2 border-passport-border bg-red-50/60 hover:bg-red-50 transition-all">
-            <div className="flex items-center gap-1 text-red-900 mb-0.5">
-              <Sparkles className="w-3.5 h-3.5 text-red-500" />
-              <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider">
+          <div className="passport-card-inner p-4 sm:p-6 lg:p-7 flex flex-col items-center justify-center text-center shadow-md border-2 border-passport-border bg-red-50/80 hover:bg-red-50 transition-all rounded-2xl">
+            <div className="flex items-center gap-1.5 text-red-900 mb-1">
+              <Sparkles className="w-4.5 h-4.5 text-red-500" />
+              <span className="text-xs sm:text-sm font-black uppercase tracking-wider">
                 REMAINING
               </span>
             </div>
-            <span className="font-mono text-3xl sm:text-4xl font-black text-red-600">
+            <span className="font-mono text-4xl sm:text-5xl lg:text-6xl font-black text-red-600 my-1">
               {stats.remaining_items}
             </span>
-            <span className="text-[10px] sm:text-[11px] text-slate-600 font-medium mt-0.5">
+            <span className="text-xs sm:text-sm text-slate-700 font-bold mt-1">
               ยังคงซ่อนอยู่
             </span>
           </div>
@@ -136,7 +133,7 @@ export const WorldRestoredMeter: React.FC<Props> = ({ stats, isLedMode = false }
       </div>
 
       {/* Energy Progress Bar */}
-      <div className="relative z-10 mt-3 sm:mt-4">
+      <div className="relative z-10 mt-4 sm:mt-5">
         <div className="flex justify-between items-center text-[11px] sm:text-xs font-mono font-black text-slate-700 mb-1">
           <span className="flex items-center gap-1.5 text-slate-900 font-bold">
             <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-spin" />
