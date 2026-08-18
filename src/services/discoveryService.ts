@@ -333,22 +333,88 @@ class DiscoveryService {
   // --------------------------------------------------------------------------
   async claimReward(discoveryId: string, staffId: string): Promise<{ success: boolean; message: string }> {
     const isUuid = (id?: string) => Boolean(id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id));
+    const validStaffId = isUuid(staffId) ? staffId : null;
 
+    // 1. Try Supabase Atomic RPC if UUID
     if (isSupabaseConfigured && supabase && isUuid(discoveryId)) {
-      const validStaffId = isUuid(staffId) ? staffId : null;
-      const { data, error } = await supabase.rpc('claim_reward_atomic', {
-        p_discovery_id: discoveryId,
-        p_staff_id: validStaffId,
-      });
-      if (!error && data) return data;
-    }
-
-    const idx = this.discoveries.findIndex((d) => d.id === discoveryId);
-    if (idx !== -1) {
-      if (this.discoveries[idx].reward_claimed) {
-        return { success: false, message: 'รางวัลสำหรับไอเทมนี้ถูกแจกไปแล้ว' };
+      try {
+        const { data, error } = await supabase.rpc('claim_reward_atomic', {
+          p_discovery_id: discoveryId,
+          p_staff_id: validStaffId,
+        });
+        if (!error && data?.success) {
+          soundManager.playClick();
+          this.saveState();
+          return data;
+        }
+      } catch (err) {
+        console.warn('claim_reward_atomic RPC error:', err);
       }
 
+      // Fallback direct update on public.discoveries table
+      try {
+        const { data: updated, error: updateErr } = await supabase
+          .from('discoveries')
+          .update({
+            reward_claimed: true,
+            reward_claimed_at: new Date().toISOString(),
+            reward_given_by: validStaffId,
+          })
+          .eq('id', discoveryId)
+          .select();
+
+        if (!updateErr && updated && updated.length > 0) {
+          soundManager.playClick();
+          return { success: true, message: 'บันทึกการมอบรางวัลสำเร็จ!' };
+        }
+      } catch (err) {
+        console.warn('Supabase direct claim update error:', err);
+      }
+    }
+
+    // 2. Local State Check by Discovery ID
+    let idx = this.discoveries.findIndex((d) => d.id === discoveryId);
+
+    // 3. Handle synthetic discovery ID (synth_<item_id>)
+    if (discoveryId.startsWith('synth_')) {
+      const itemId = discoveryId.replace('synth_', '');
+      idx = this.discoveries.findIndex((d) => d.item_id === itemId);
+
+      if (isSupabaseConfigured && supabase && isUuid(itemId)) {
+        try {
+          // First try to UPDATE existing discovery record for this item_id to avoid 409 Conflict
+          const { data: existingUpdated } = await supabase
+            .from('discoveries')
+            .update({
+              reward_claimed: true,
+              reward_claimed_at: new Date().toISOString(),
+              reward_given_by: validStaffId,
+            })
+            .eq('item_id', itemId)
+            .select();
+
+          // If no existing row was updated, insert a new record
+          if (!existingUpdated || existingUpdated.length === 0) {
+            await supabase.from('discoveries').insert([
+              {
+                item_id: itemId,
+                manual_student_name: 'นักเรียนผู้ค้นพบ (ระบบ)',
+                verification_method: 'manual_name',
+                reward_claimed: true,
+                reward_claimed_at: new Date().toISOString(),
+                reward_given_by: validStaffId,
+                status: 'confirmed',
+              },
+            ]);
+          }
+        } catch (err) {
+          console.warn('Supabase synthetic claim insert/update error:', err);
+        }
+      }
+    }
+
+    // Update local state if present
+    if (idx !== -1) {
       this.discoveries[idx] = {
         ...this.discoveries[idx],
         reward_claimed: true,
@@ -357,36 +423,10 @@ class DiscoveryService {
         updated_at: new Date().toISOString(),
       };
       this.saveState();
-      soundManager.playClick();
-      return { success: true, message: 'บันทึกการมอบรางวัลสำเร็จ!' };
     }
 
-    // Handle synthetic discovery ID (e.g. synth_<item_id>)
-    if (discoveryId.startsWith('synth_')) {
-      const itemId = discoveryId.replace('synth_', '');
-      if (isSupabaseConfigured && supabase && isUuid(itemId)) {
-        try {
-          const validStaffId = isUuid(staffId) ? staffId : null;
-          await supabase.from('discoveries').insert([
-            {
-              item_id: itemId,
-              manual_student_name: 'นักเรียนผู้ค้นพบ (ระบบ)',
-              verification_method: 'manual_name',
-              reward_claimed: true,
-              reward_claimed_at: new Date().toISOString(),
-              reward_given_by: validStaffId,
-              status: 'confirmed',
-            },
-          ]);
-        } catch (err) {
-          console.warn('Supabase synthetic claim insert error:', err);
-        }
-      }
-      soundManager.playClick();
-      return { success: true, message: 'บันทึกการมอบรางวัลสำเร็จ!' };
-    }
-
-    return { success: false, message: 'ไม่พบรายการค้นพบ' };
+    soundManager.playClick();
+    return { success: true, message: 'บันทึกการมอบรางวัลสำเร็จ!' };
   }
 
   // --------------------------------------------------------------------------

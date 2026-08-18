@@ -102,20 +102,20 @@ export const DashboardPage: React.FC = () => {
       />
       
       {/* Top Banner & Passport Header Toolbar */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-2 pb-2.5 border-b-2 border-slate-300">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-3 pb-3 border-b-2 border-slate-300">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="passport-badge-red text-[11px] font-game px-3 py-1 rounded-full font-black tracking-wider shadow-xs">
+            <span className="passport-badge-red text-xs sm:text-sm font-game px-3.5 py-1 rounded-full font-black tracking-wider shadow-xs">
               {settings?.dashboard_title || 'PTECH-Sci SURVIVOR PASSPORT'}
             </span>
-            <span className="passport-badge-yellow text-[10px] font-mono px-2 py-0.5 rounded-full font-black shadow-xs">
+            <span className="passport-badge-yellow text-xs font-mono px-2.5 py-0.5 rounded-full font-black shadow-xs">
               MARIO WORLD
             </span>
-            <span className="px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-300 font-mono text-[10px] font-bold">
+            <span className="px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-300 font-mono text-xs font-bold">
               REAL-TIME
             </span>
           </div>
-          <h1 className="text-lg sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight mt-1 flex items-center gap-2">
+          <h1 className="text-xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight mt-2 flex items-center gap-2">
             <span>{settings?.tagline || 'The Game Has Begun. Science Is Your Only Way Out.'}</span>
           </h1>
         </div>
