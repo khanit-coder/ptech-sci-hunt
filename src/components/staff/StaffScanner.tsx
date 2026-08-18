@@ -134,19 +134,44 @@ export const StaffScanner: React.FC<Props> = ({
       const scanner = new Html5Qrcode(scannerContainerId, { verbose: false });
       scannerRef.current = scanner;
 
-      // Check available cameras
-      try {
-        const devs = await Html5Qrcode.getCameras();
-        if (devs && devs.length > 0) {
-          setCameras(devs);
+      let cameraConstraint: any = null;
+
+      if (cameraConfig?.deviceId) {
+        cameraConstraint = { deviceId: { exact: cameraConfig.deviceId } };
+      } else {
+        // Enumerate camera devices first to pick exact back/front camera ID (avoids NotReadableError on mobile)
+        try {
+          const devs = await Html5Qrcode.getCameras();
+          if (devs && devs.length > 0) {
+            setCameras(devs);
+            const targetFacing = cameraConfig?.facing || facingMode;
+            const matched = devs.find((d, idx) => {
+              const lbl = (d.label || '').toLowerCase();
+              if (targetFacing === 'environment') {
+                return (
+                  lbl.includes('back') ||
+                  lbl.includes('rear') ||
+                  lbl.includes('environment') ||
+                  lbl.includes('0') ||
+                  (devs.length > 1 && idx === devs.length - 1)
+                );
+              } else {
+                return lbl.includes('front') || lbl.includes('user') || lbl.includes('selfie') || idx === 0;
+              }
+            }) || devs[0];
+
+            if (matched) {
+              cameraConstraint = { deviceId: { exact: matched.id } };
+            }
+          }
+        } catch {
+          // ignore camera enum errors
         }
-      } catch {
-        // ignore camera enum errors
       }
 
-      const cameraConstraint = cameraConfig?.deviceId 
-        ? { deviceId: { exact: cameraConfig.deviceId } }
-        : { facingMode: cameraConfig?.facing || facingMode };
+      if (!cameraConstraint) {
+        cameraConstraint = { facingMode: cameraConfig?.facing || facingMode };
+      }
 
       await scanner.start(
         cameraConstraint,
@@ -185,23 +210,22 @@ export const StaffScanner: React.FC<Props> = ({
       const errMsg = err?.toString?.() || '';
 
       if (errMsg.includes('NotReadableError') || errMsg.includes('Could not start video source')) {
-        // Force-release any lingering MediaStream tracks the browser/OS is still holding
+        // Release any lingering MediaStream tracks
         try {
           const allStreams = await navigator.mediaDevices.getUserMedia({ video: true });
           allStreams.getTracks().forEach(t => t.stop());
-        } catch { /* ignore — just trying to release */ }
+        } catch { /* ignore */ }
 
         if (retryCount === 0) {
-          // First retry: wait for OS to release stream, try same camera
-          setErrorMsg('กำลังรอปล่อยกล้อง...');
-          await new Promise(r => setTimeout(r, 1800));
-          return startCamera(cameraConfig, 1);
+          // Retry 0: Try simple facingMode string constraint
+          await new Promise(r => setTimeout(r, 600));
+          return startCamera({ facing: cameraConfig?.facing || facingMode }, 1);
         } else if (retryCount === 1) {
-          // Second retry: switch to opposite facing
+          // Retry 1: Try opposite camera facing
           const alternateFacing = (cameraConfig?.facing || facingMode) === 'environment' ? 'user' : 'environment';
           setFacingMode(alternateFacing);
           setErrorMsg('กำลังลองกล้องอีกตัว...');
-          await new Promise(r => setTimeout(r, 1200));
+          await new Promise(r => setTimeout(r, 800));
           return startCamera({ facing: alternateFacing }, 2);
         }
         setErrorMsg(

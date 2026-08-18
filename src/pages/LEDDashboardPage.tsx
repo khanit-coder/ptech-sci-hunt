@@ -135,6 +135,7 @@ export const LEDDashboardPage: React.FC = () => {
           queue={alertQueue}
           onDismissCurrent={handleDismissCurrent}
           onClearAll={handleClearAll}
+          nameMode={settings?.show_student_name_mode}
         />
       )}
 

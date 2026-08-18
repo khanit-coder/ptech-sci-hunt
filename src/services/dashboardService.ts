@@ -199,16 +199,25 @@ class DashboardService {
   // Aggregated Stats
   // --------------------------------------------------------------------------
   async getDashboardStats(): Promise<DashboardStats> {
+    await this.getSettings();
     const allItems = await itemService.getAllItems();
     const activeItems = allItems.filter((i) => i.status !== 'disabled');
     const allDiscoveries = await discoveryService.getAllDiscoveries();
     const confirmedDiscoveries = allDiscoveries.filter((d) => d.status === 'confirmed');
 
+    const statusDiscoveredItems = activeItems.filter((i) => i.status === 'discovered');
+    
+    // Count as discovered if in discoveries table OR item status is 'discovered'
+    const discoveredItemIds = new Set([
+      ...confirmedDiscoveries.map((d) => d.item_id),
+      ...statusDiscoveredItems.map((i) => i.id),
+    ]);
+
     const total_items = this.settings.total_items_override && this.settings.total_items_override > 0
       ? this.settings.total_items_override
       : activeItems.length || 25;
 
-    const discovered_items = confirmedDiscoveries.length;
+    const discovered_items = Math.min(total_items, discoveredItemIds.size);
     const remaining_items = Math.max(0, total_items - discovered_items);
     const world_restored_percentage = total_items === 0 ? 0 : Math.round((discovered_items / total_items) * 1000) / 10;
 
@@ -238,7 +247,11 @@ class DashboardService {
     return itemTypes.map((type) => {
       const typeItems = allItems.filter((i) => i.item_type_id === type.id && i.status !== 'disabled');
       const typeItemIds = new Set(typeItems.map((i) => i.id));
-      const discoveredCount = confirmedDisc.filter((d) => typeItemIds.has(d.item_id)).length;
+      
+      const discCountFromRecords = confirmedDisc.filter((d) => typeItemIds.has(d.item_id)).length;
+      const discCountFromStatus = typeItems.filter((i) => i.status === 'discovered').length;
+      
+      const discoveredCount = Math.max(discCountFromRecords, discCountFromStatus);
       const totalCount = typeItems.length || 5;
       const remainingCount = Math.max(0, totalCount - discoveredCount);
       const progressPercentage = totalCount === 0 ? 0 : Math.round((discoveredCount / totalCount) * 100);
@@ -257,6 +270,7 @@ class DashboardService {
   // Recent Discoveries for Public LED
   // --------------------------------------------------------------------------
   async getRecentDiscoveries(limit = 8): Promise<RecentDiscoveryItem[]> {
+    await this.getSettings();
     const discoveries = await discoveryService.getAllDiscoveries();
     const allItems = await itemService.getAllItems();
     const itemTypes = await itemService.getItemTypes();

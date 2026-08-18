@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Discovery } from '@/types';
+import { Discovery, StudentNameDisplayMode } from '@/types';
 import { Sparkles, Zap, Trophy, X, ChevronRight, Layers, Clock, Star } from 'lucide-react';
 import { maskStudentName } from '@/lib/privacy';
 import { soundManager } from '@/lib/sound';
@@ -8,9 +8,10 @@ interface Props {
   queue: Discovery[];
   onDismissCurrent: () => void;
   onClearAll: () => void;
+  nameMode?: StudentNameDisplayMode;
 }
 
-export const DiscoveryAlertModal: React.FC<Props> = ({ queue, onDismissCurrent, onClearAll }) => {
+export const DiscoveryAlertModal: React.FC<Props> = ({ queue, onDismissCurrent, onClearAll, nameMode }) => {
   const [progress, setProgress] = useState(100);
   const displayDuration = 6000; // 6 seconds per discovery in queue
 
@@ -45,7 +46,7 @@ export const DiscoveryAlertModal: React.FC<Props> = ({ queue, onDismissCurrent, 
     activeDiscovery.student?.full_name || activeDiscovery.manual_student_name,
     activeDiscovery.student?.first_name,
     activeDiscovery.student?.last_name,
-    'masked'
+    nameMode || 'masked'
   );
 
   return (
