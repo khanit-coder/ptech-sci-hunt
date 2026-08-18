@@ -1,11 +1,11 @@
-﻿-- ============================================================
+-- ============================================================
 -- MIGRATION: External Student Support + Column Additions
 -- Run this in Supabase SQL Editor (Dashboard > SQL Editor)
 -- ============================================================
 
 -- 1. Add external_qr to verification_method enum (if not exists)
 DO $$ BEGIN
-    ALTER TYPE public.verification_method ADD VALUE IF NOT EXISTS ''external_qr'';
+    ALTER TYPE public.verification_method ADD VALUE IF NOT EXISTS 'external_qr';
 EXCEPTION
     WHEN others THEN NULL;
 END $$;
@@ -27,4 +27,4 @@ CREATE INDEX IF NOT EXISTS idx_students_school_name ON public.students(school_na
 CREATE INDEX IF NOT EXISTS idx_students_external_id ON public.students(external_id);
 
 -- Done!
-SELECT ''Migration completed successfully'' AS result;
+SELECT 'Migration completed successfully' AS result;
