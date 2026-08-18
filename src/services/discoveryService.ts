@@ -126,6 +126,42 @@ class DiscoveryService {
     this.discoveries.forEach((d) => map.set(d.id, d));
     supabaseDiscoveries.forEach((d) => map.set(d.id, d));
 
+    // Fallback: Include synthetic discovery records for items whose status is 'discovered'
+    // but don't have an explicit entry in discoveries table or local state
+    try {
+      const allItems = await itemService.getAllItems();
+      const confirmedItemIds = new Set(
+        Array.from(map.values())
+          .filter((d) => d.status === 'confirmed')
+          .map((d) => d.item_id)
+      );
+
+      const orphanedDiscoveredItems = allItems.filter(
+        (i) => i.status === 'discovered' && !confirmedItemIds.has(i.id)
+      );
+
+      orphanedDiscoveredItems.forEach((item) => {
+        const synthId = `synth_${item.id}`;
+        map.set(synthId, {
+          id: synthId,
+          item_id: item.id,
+          item,
+          student_id: undefined,
+          student: undefined,
+          manual_student_name: 'นักเรียนผู้ค้นพบ (ระบบ)',
+          verification_method: 'manual_name',
+          discovered_at: item.updated_at || item.created_at || new Date().toISOString(),
+          status: 'confirmed',
+          reward_claimed: false,
+          notes: 'คืนค่าจากสถานะไอเทม (System Discovered Item)',
+          created_at: item.created_at || new Date().toISOString(),
+          updated_at: item.updated_at || new Date().toISOString(),
+        });
+      });
+    } catch (err) {
+      console.warn('Error fetching items for synthetic discoveries:', err);
+    }
+
     const combined = Array.from(map.values()).sort(
       (a, b) => new Date(b.discovered_at).getTime() - new Date(a.discovered_at).getTime()
     );

@@ -29,15 +29,18 @@ export const DiscoveryManager: React.FC<Props> = ({ discoveries, onRefresh }) =>
   const [revokeReason, setRevokeReason] = useState('');
 
   const filtered = discoveries.filter((d) => {
-    const q = searchQuery.toLowerCase();
+    const q = searchQuery.toLowerCase().trim();
     const matchesQuery =
-      d.item?.item_code.toLowerCase().includes(q) ||
-      d.item?.name.toLowerCase().includes(q) ||
-      d.student?.full_name.toLowerCase().includes(q) ||
-      d.manual_student_name?.toLowerCase().includes(q);
+      !q ||
+      d.item?.item_code?.toLowerCase().includes(q) ||
+      d.item?.name?.toLowerCase().includes(q) ||
+      d.student?.full_name?.toLowerCase().includes(q) ||
+      d.student?.student_code?.toLowerCase().includes(q) ||
+      d.manual_student_name?.toLowerCase().includes(q) ||
+      d.manual_student_code?.toLowerCase().includes(q);
 
     const matchesStatus = statusFilter === 'ALL' || d.status === statusFilter;
-    return matchesQuery && matchesStatus;
+    return Boolean(matchesQuery && matchesStatus);
   });
 
   const handleRevokeConfirm = async (e: React.FormEvent) => {
