@@ -19,6 +19,7 @@ export const INITIAL_EVENT_SETTINGS: EventSettings = {
   show_recent_discoveries: true,
   show_item_hints: true,
   maintenance_mode: false,
+  glitch_effect_enabled: true,
 };
 
 class DashboardService {

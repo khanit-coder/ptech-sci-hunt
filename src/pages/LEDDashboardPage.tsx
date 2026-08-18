@@ -7,6 +7,7 @@ import { RecentDiscoveries } from '@/components/dashboard/RecentDiscoveries';
 import { DiscoveryAlertModal } from '@/components/dashboard/DiscoveryAlertModal';
 import { CelebrationOverlay } from '@/components/dashboard/CelebrationOverlay';
 import { getSavedFontScale, applyFontScale } from '@/components/dashboard/FontSizeController';
+import { GlitchOverlay } from '@/components/effects/GlitchOverlay';
 import { Star } from 'lucide-react';
 
 export const LEDDashboardPage: React.FC = () => {
@@ -96,6 +97,12 @@ export const LEDDashboardPage: React.FC = () => {
 
   return (
     <div className="dashboard-scalable w-screen h-screen max-h-screen bg-[#F0F4F8] text-slate-900 p-2.5 sm:p-4 lg:p-5 flex flex-col justify-between select-none overflow-hidden relative">
+      
+      {/* Cyber Glitch Overlay */}
+      <GlitchOverlay
+        restorationPercentage={stats.world_restored_percentage}
+        enabled={settings?.glitch_effect_enabled ?? true}
+      />
       
       {/* Top Header: Presentation Banner with Passport Style */}
       <div className="text-center space-y-1 mb-1">

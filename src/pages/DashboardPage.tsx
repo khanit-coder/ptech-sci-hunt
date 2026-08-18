@@ -8,6 +8,7 @@ import { DiscoveryAlertModal } from '@/components/dashboard/DiscoveryAlertModal'
 import { CelebrationOverlay } from '@/components/dashboard/CelebrationOverlay';
 import { LiveStatusBadge } from '@/components/dashboard/LiveStatusBadge';
 import { FontSizeController, getSavedFontScale, applyFontScale } from '@/components/dashboard/FontSizeController';
+import { GlitchOverlay } from '@/components/effects/GlitchOverlay';
 import { Radio, Sparkles, Tv, Star, ShieldCheck, MapPin, Award } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -92,7 +93,13 @@ export const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="dashboard-scalable min-h-screen pb-16 pt-4 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-6 sm:space-y-8">
+    <div className="dashboard-scalable min-h-screen pb-16 pt-4 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-6 sm:space-y-8 relative">
+      
+      {/* Cyber Glitch Distortion Overlay */}
+      <GlitchOverlay
+        restorationPercentage={stats.world_restored_percentage}
+        enabled={settings?.glitch_effect_enabled ?? true}
+      />
       
       {/* Top Banner & Passport Header Toolbar */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-4 border-b-2 border-slate-300">

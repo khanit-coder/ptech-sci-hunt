@@ -35,6 +35,7 @@ export const EventSettingsForm: React.FC<Props> = ({ settings, onRefresh }) => {
   const [celebrationEnabled, setCelebrationEnabled] = useState(settings.celebration_enabled);
   const [showRecent, setShowRecent] = useState(settings.show_recent_discoveries);
   const [showHints, setShowHints] = useState(settings.show_item_hints);
+  const [glitchEffectEnabled, setGlitchEffectEnabled] = useState(settings.glitch_effect_enabled ?? true);
   const [isSaved, setIsSaved] = useState(false);
 
   // Multi-step Emergency Reset protection state
@@ -56,6 +57,7 @@ export const EventSettingsForm: React.FC<Props> = ({ settings, onRefresh }) => {
       celebration_enabled: celebrationEnabled,
       show_recent_discoveries: showRecent,
       show_item_hints: showHints,
+      glitch_effect_enabled: glitchEffectEnabled,
     });
 
     await adminService.logAction('SETTINGS_UPDATED', 'event_settings', '1');
@@ -233,7 +235,7 @@ export const EventSettingsForm: React.FC<Props> = ({ settings, onRefresh }) => {
         </div>
 
         {/* Feature Switches */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <label className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between cursor-pointer">
             <div>
               <span className="font-bold text-white block">เสียงประกอบ (Audio)</span>
@@ -269,6 +271,22 @@ export const EventSettingsForm: React.FC<Props> = ({ settings, onRefresh }) => {
               type="checkbox"
               checked={showRecent}
               onChange={(e) => setShowRecent(e.target.checked)}
+              className="w-5 h-5 rounded accent-mario-orange"
+            />
+          </label>
+
+          <label className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between cursor-pointer">
+            <div>
+              <span className="font-bold text-white block flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                <span>Cyber-Glitch</span>
+              </span>
+              <span className="text-[10px] text-slate-500">เอฟเฟกต์มิติพังตาม % ความเสถียร</span>
+            </div>
+            <input
+              type="checkbox"
+              checked={glitchEffectEnabled}
+              onChange={(e) => setGlitchEffectEnabled(e.target.checked)}
               className="w-5 h-5 rounded accent-mario-orange"
             />
           </label>

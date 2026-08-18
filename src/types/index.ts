@@ -156,6 +156,7 @@ export interface EventSettings {
   show_recent_discoveries: boolean;
   show_item_hints: boolean;
   maintenance_mode: boolean;
+  glitch_effect_enabled?: boolean;
   created_at?: string;
   updated_at?: string;
 }
