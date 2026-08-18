@@ -5,7 +5,7 @@ import { soundManager } from '@/lib/sound';
 
 export const NotFoundPage: React.FC = () => {
   return (
-    <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 text-center space-y-6">
+    <div className="min-h-[calc(100vh-8rem)] bg-mario-deepBg text-slate-100 flex flex-col items-center justify-center p-4 text-center space-y-6">
       <div className="w-24 h-24 rounded-3xl bg-red-950/60 border-2 border-red-600 flex items-center justify-center text-5xl animate-bounce">
         👾
       </div>

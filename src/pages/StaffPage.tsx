@@ -161,9 +161,10 @@ export const StaffPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pb-20 pt-4 px-4 sm:px-6 max-w-2xl mx-auto space-y-6">
+    <div className="w-full min-h-screen bg-mario-deepBg text-slate-100 pb-20 pt-4 px-4 sm:px-6">
+      <div className="max-w-2xl mx-auto space-y-6">
       
-      {/* Top Mobile Header */}
+        {/* Top Mobile Header */}
       <div className="flex items-center justify-between pb-3 border-b border-slate-800">
         <div>
           <div className="flex items-center gap-1.5">
@@ -388,6 +389,7 @@ export const StaffPage: React.FC = () => {
           isSubmitting={isSubmitting}
         />
       )}
+      </div>
     </div>
   );
 };

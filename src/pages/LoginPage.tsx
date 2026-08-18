@@ -1,15 +1,36 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '@/services/authService';
 import { soundManager } from '@/lib/sound';
+import { Profile } from '@/types';
 import { Gamepad2, ShieldAlert, ScanLine, Tv, Lock, Mail, ArrowRight, Sparkles } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const fromLocation = (location.state as any)?.from?.pathname;
+
+  const navigateAfterLogin = (profile: Profile) => {
+    if (fromLocation) {
+      if (profile.role === 'admin') {
+        navigate(fromLocation, { replace: true });
+        return;
+      }
+      if (profile.role === 'staff' && !fromLocation.startsWith('/admin')) {
+        navigate(fromLocation, { replace: true });
+        return;
+      }
+    }
+
+    if (profile.role === 'admin') navigate('/admin', { replace: true });
+    else if (profile.role === 'staff') navigate('/staff', { replace: true });
+    else navigate('/dashboard', { replace: true });
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,12 +44,10 @@ export const LoginPage: React.FC = () => {
       const res = await authService.login(email.trim(), password);
       if (res.success && res.profile) {
         soundManager.playDiscovery();
-        if (res.profile.role === 'admin') navigate('/admin');
-        else if (res.profile.role === 'staff') navigate('/staff');
-        else navigate('/dashboard');
+        navigateAfterLogin(res.profile);
       } else {
         soundManager.playError();
-        setErrorMsg(res.error || 'เข้าสู่ระบบไม่สำเร็จ');
+        setErrorMsg(res.error || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
       }
     } finally {
       setLoading(false);
@@ -43,14 +62,13 @@ export const LoginPage: React.FC = () => {
     const res = await authService.login(presetEmail);
     setLoading(false);
     if (res.success && res.profile) {
-      if (res.profile.role === 'admin') navigate('/admin');
-      else if (res.profile.role === 'staff') navigate('/staff');
-      else navigate('/dashboard');
+      soundManager.playDiscovery();
+      navigateAfterLogin(res.profile);
     }
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center p-4">
+    <div className="min-h-[calc(100vh-4rem)] bg-mario-deepBg text-slate-100 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-slate-900/90 border-2 border-mario-orange/50 rounded-3xl p-8 shadow-[0_0_60px_rgba(255,122,0,0.2)] backdrop-blur-xl space-y-6 relative overflow-hidden">
         
         {/* Glow Header */}

@@ -109,9 +109,10 @@ export const AdminPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pb-20 pt-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8">
+    <div className="w-full min-h-screen bg-mario-deepBg text-slate-100 pb-20 pt-6 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto space-y-8">
       
-      {/* Top Header & Quick Actions Bar */}
+        {/* Top Header & Quick Actions Bar */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-slate-800">
         <div>
           <div className="flex items-center gap-2">
@@ -264,6 +265,7 @@ export const AdminPage: React.FC = () => {
           onRefresh={loadAllData}
         />
       )}
+      </div>
     </div>
   );
 };

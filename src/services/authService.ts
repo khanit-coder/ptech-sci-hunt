@@ -49,10 +49,12 @@ class AuthService {
         this.currentProfile = null;
       }
     } else {
-      // Default to staff user for instant test friendliness
-      this.currentProfile = MOCK_PROFILES[0]; // Admin by default for testing
-      localStorage.setItem('ptech_auth_profile', JSON.stringify(this.currentProfile));
+      this.currentProfile = null;
     }
+  }
+
+  public getProfile(): Profile | null {
+    return this.currentProfile;
   }
 
   public subscribe(callback: (profile: Profile | null) => void) {
