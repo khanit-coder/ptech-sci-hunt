@@ -494,8 +494,34 @@ BEGIN
 END;
 $$;
 
--- 7. ROW LEVEL SECURITY (RLS) POLICIES
--- Configured for Event Public / Staff / Admin access
+-- 7. ROW LEVEL SECURITY (RLS) POLICIES & ROLE HELPERS
+-- Configured for Event Public Read / Staff Scanner / Admin Management
+
+-- Helper function to verify Admin privilege
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'admin' AND is_active = true
+  );
+$$;
+
+-- Helper function to verify Staff/Admin privilege
+CREATE OR REPLACE FUNCTION public.is_staff()
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role IN ('admin', 'staff') AND is_active = true
+  );
+$$;
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.item_types ENABLE ROW LEVEL SECURITY;
@@ -508,44 +534,94 @@ ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.import_jobs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.import_errors ENABLE ROW LEVEL SECURITY;
 
--- Profiles Policies
+-- 1. Profiles Policies
+DROP POLICY IF EXISTS "Public read profiles" ON public.profiles;
+DROP POLICY IF EXISTS "User or admin manage profiles" ON public.profiles;
 DROP POLICY IF EXISTS "Public access profiles" ON public.profiles;
-CREATE POLICY "Public access profiles" ON public.profiles FOR ALL USING (true) WITH CHECK (true);
 
--- Item Types Policies
+CREATE POLICY "Public read profiles" ON public.profiles 
+  FOR SELECT USING (true);
+
+CREATE POLICY "User or admin insert profile" ON public.profiles 
+  FOR INSERT WITH CHECK (id = auth.uid() OR public.is_admin());
+
+CREATE POLICY "User or admin update profile" ON public.profiles 
+  FOR UPDATE USING (id = auth.uid() OR public.is_admin());
+
+CREATE POLICY "Admin delete profile" ON public.profiles 
+  FOR DELETE USING (public.is_admin());
+
+-- 2. Item Types Policies
 DROP POLICY IF EXISTS "Public access item types" ON public.item_types;
-CREATE POLICY "Public access item types" ON public.item_types FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public read item types" ON public.item_types 
+  FOR SELECT USING (true);
 
--- Items Policies
+CREATE POLICY "Admin manage item types" ON public.item_types 
+  FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+-- 3. Items Policies
 DROP POLICY IF EXISTS "Public access items" ON public.items;
-CREATE POLICY "Public access items" ON public.items FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public read items" ON public.items 
+  FOR SELECT USING (true);
 
--- Students Policies
-DROP POLICY IF EXISTS "Public access students" ON public.students;
-CREATE POLICY "Public access students" ON public.students FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Admin manage items" ON public.items 
+  FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
--- Discoveries Policies
-DROP POLICY IF EXISTS "Public access discoveries" ON public.discoveries;
-CREATE POLICY "Public access discoveries" ON public.discoveries FOR ALL USING (true) WITH CHECK (true);
-
--- Event Settings Policies
+-- 4. Event Settings Policies
 DROP POLICY IF EXISTS "Public access event settings" ON public.event_settings;
-CREATE POLICY "Public access event settings" ON public.event_settings FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public read event settings" ON public.event_settings 
+  FOR SELECT USING (true);
 
--- Discovery Attempts Policies
+CREATE POLICY "Admin manage event settings" ON public.event_settings 
+  FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+-- 5. Students Policies
+DROP POLICY IF EXISTS "Public access students" ON public.students;
+CREATE POLICY "Public read students" ON public.students 
+  FOR SELECT USING (true);
+
+CREATE POLICY "Staff and admin manage students" ON public.students 
+  FOR ALL USING (public.is_staff()) WITH CHECK (public.is_staff());
+
+-- 6. Discoveries Policies
+DROP POLICY IF EXISTS "Public access discoveries" ON public.discoveries;
+CREATE POLICY "Public read discoveries" ON public.discoveries 
+  FOR SELECT USING (true);
+
+CREATE POLICY "Staff and admin claim discoveries" ON public.discoveries 
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Staff and admin update discoveries" ON public.discoveries 
+  FOR UPDATE USING (public.is_staff());
+
+CREATE POLICY "Admin delete discoveries" ON public.discoveries 
+  FOR DELETE USING (public.is_admin());
+
+-- 7. Discovery Attempts Policies
 DROP POLICY IF EXISTS "Public access discovery attempts" ON public.discovery_attempts;
-CREATE POLICY "Public access discovery attempts" ON public.discovery_attempts FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Staff and admin read attempts" ON public.discovery_attempts 
+  FOR SELECT USING (public.is_staff());
 
--- Audit Logs Policies
+CREATE POLICY "Insert discovery attempts" ON public.discovery_attempts 
+  FOR INSERT WITH CHECK (true);
+
+-- 8. Audit Logs Policies
 DROP POLICY IF EXISTS "Public access audit logs" ON public.audit_logs;
-CREATE POLICY "Public access audit logs" ON public.audit_logs FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Admin read audit logs" ON public.audit_logs 
+  FOR SELECT USING (public.is_admin());
 
--- Import Jobs Policies
+CREATE POLICY "Insert audit logs" ON public.audit_logs 
+  FOR INSERT WITH CHECK (true);
+
+-- 9. Import Jobs & Errors Policies
 DROP POLICY IF EXISTS "Public access import jobs" ON public.import_jobs;
-CREATE POLICY "Public access import jobs" ON public.import_jobs FOR ALL USING (true) WITH CHECK (true);
-
 DROP POLICY IF EXISTS "Public access import errors" ON public.import_errors;
-CREATE POLICY "Public access import errors" ON public.import_errors FOR ALL USING (true) WITH CHECK (true);
+
+CREATE POLICY "Admin manage import jobs" ON public.import_jobs 
+  FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+CREATE POLICY "Admin manage import errors" ON public.import_errors 
+  FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 -- 8. REALTIME REPLICATION CONFIGURATION
 -- Ensure Postgres triggers publish changes to Supabase Realtime for Dashboard

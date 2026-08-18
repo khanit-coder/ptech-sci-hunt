@@ -74,18 +74,28 @@ class AuthService {
 
   async getCurrentUser(): Promise<Profile | null> {
     if (isSupabaseConfigured && supabase) {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) {
+          // Invalidate any spoofed localStorage profile
+          this.currentProfile = null;
+          localStorage.removeItem('ptech_auth_profile');
+          return null;
+        }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
 
-      if (profile) {
-        this.currentProfile = profile as Profile;
-        return this.currentProfile;
+        if (profile) {
+          this.currentProfile = profile as Profile;
+          localStorage.setItem('ptech_auth_profile', JSON.stringify(this.currentProfile));
+          return this.currentProfile;
+        }
+      } catch (err) {
+        console.error('Failed to verify session with Supabase:', err);
       }
     }
     return this.currentProfile;
@@ -97,14 +107,24 @@ class AuthService {
       return { success: false, error: 'กรุณากรอกชื่อผู้ใช้ (Username)' };
     }
 
-    if (isSupabaseConfigured && supabase && password) {
+    // 1. Supabase Mode (Production / Active Backend)
+    if (isSupabaseConfigured && supabase) {
+      if (!password) {
+        return { success: false, error: 'กรุณากรอกรหัสผ่าน (Password)' };
+      }
+
       const email = input.includes('@') ? input : `${input}@ptech.ac.th`;
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (!error && data.user) {
+      if (error) {
+        // Strict security: Never fallback to mock if Supabase is active
+        return { success: false, error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' };
+      }
+
+      if (data.user) {
         const { data: profile } = await supabase
           .from('profiles')
           .select('*')
@@ -117,8 +137,8 @@ class AuthService {
           this.notify();
           return { success: true, profile: this.currentProfile };
         } else {
-          // Auto create missing profile row in Supabase
-          const isAdm = input.startsWith('admin') || input.includes('admin') || email.startsWith('admin');
+          // Auto-provision initial profile row in Supabase
+          const isAdm = input === 'admin' || email.startsWith('admin@');
           const newProfile: Profile = {
             id: data.user.id,
             email: data.user.email || email,
@@ -139,13 +159,10 @@ class AuthService {
       }
     }
 
-    // Match predefined local accounts by username, email, or role
+    // 2. Offline / Local Development Mock Auth (Only when Supabase is completely unconfigured)
     const found = MOCK_PROFILES.find((p) => 
       p.username.toLowerCase() === input || 
-      p.email.toLowerCase() === input ||
-      (input === 'admin' && p.role === 'admin') ||
-      (input === 'staff' && p.role === 'staff') ||
-      (input === 'viewer' && p.role === 'viewer')
+      p.email.toLowerCase() === input
     );
 
     if (found) {
@@ -155,26 +172,7 @@ class AuthService {
       return { success: true, profile: this.currentProfile };
     }
 
-    // Dynamic mock user for custom entered username
-    const isAdm = input.startsWith('admin') || input.includes('admin');
-    const isStf = input.startsWith('staff') || input.includes('staff');
-    const role: UserRole = isAdm ? 'admin' : isStf ? 'staff' : 'staff';
-
-    const dynamicProfile: Profile = {
-      id: 'usr_' + Math.random().toString(36).substring(2, 9),
-      email: input.includes('@') ? input : `${input}@ptech.ac.th`,
-      full_name: isAdm ? `Admin (${input})` : `Staff (${input})`,
-      display_name: isAdm ? `Admin: ${input}` : `Staff: ${input}`,
-      role,
-      is_active: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    this.currentProfile = dynamicProfile;
-    localStorage.setItem('ptech_auth_profile', JSON.stringify(this.currentProfile));
-    this.notify();
-    return { success: true, profile: this.currentProfile };
+    return { success: false, error: 'ไม่พบบัญชีผู้ใช้งานในระบบออฟไลน์' };
   }
 
   async logout(): Promise<void> {
