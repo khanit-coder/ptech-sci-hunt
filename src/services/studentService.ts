@@ -102,12 +102,15 @@ class StudentService {
   async searchStudents(query: string, limit = 15): Promise<Student[]> {
     if (isSupabaseConfigured && supabase) {
       const q = query.trim();
-      const { data } = await supabase
+      // Only query columns that exist in the Supabase students table
+      // school_name, phone, nickname, qr_token are local-only fields for now
+      const { data, error } = await supabase
         .from('students')
         .select('*')
-        .or(`student_code.ilike.%${q}%,first_name.ilike.%${q}%,last_name.ilike.%${q}%,full_name.ilike.%${q}%,school_name.ilike.%${q}%,phone.ilike.%${q}%`)
+        .or(`student_code.ilike.%${q}%,first_name.ilike.%${q}%,last_name.ilike.%${q}%,full_name.ilike.%${q}%`)
         .limit(limit);
-      if (data) return data as Student[];
+      if (!error && data) return data as Student[];
+      // If Supabase query fails, fall through to local provider
     }
 
     const res = await this.provider.searchStudents({ query, limit });

@@ -156,13 +156,20 @@ export const StaffPage: React.FC = () => {
       if (res.success) {
         setActiveStep('success');
         loadHistoryAndStats();
-      } else {
+      } else if (res.code === 'ALREADY_DISCOVERED') {
+        // Item genuinely already found by someone else
         setActiveStep('already_discovered');
+      } else {
+        // DATABASE_ERROR, ITEM_DISABLED, INVALID_ITEM etc — don't claim "already discovered"
+        // Show error inline and let staff retry or go back
+        setItemError(`เกิดข้อผิดพลาด: ${res.message || res.code}`);
+        setActiveStep('preview_item');
       }
     } finally {
       setIsSubmitting(false);
     }
   };
+
 
   // Reset workflow back to scan
   const handleResetToScan = () => {
