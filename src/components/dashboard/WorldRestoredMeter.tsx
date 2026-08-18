@@ -69,7 +69,7 @@ export const WorldRestoredMeter: React.FC<Props> = ({ stats, isLedMode = false }
         <div className="md:col-span-6 flex flex-col items-center md:items-start text-center md:text-left">
           <div className="flex items-baseline gap-2 sm:gap-4 flex-wrap justify-center md:justify-start">
             <span
-              className={`font-game text-7xl sm:text-8xl lg:text-[105px] tracking-tight font-black leading-none transition-all ${
+              className={`font-game text-8xl sm:text-9xl lg:text-[120px] tracking-tight font-black leading-none transition-all ${
                 isComplete ? 'text-green-600' : 'text-mario-blue'
               }`}
             >
@@ -103,7 +103,7 @@ export const WorldRestoredMeter: React.FC<Props> = ({ stats, isLedMode = false }
               </span>
             </div>
             <div className="flex items-baseline gap-1 my-1">
-              <span className="font-mono text-4xl sm:text-5xl lg:text-6xl font-black text-amber-600">
+              <span className="font-mono text-5xl sm:text-6xl lg:text-7xl font-black text-amber-600">
                 {stats.discovered_items}
               </span>
               <span className="text-slate-500 font-mono text-base sm:text-lg font-bold">
@@ -122,7 +122,7 @@ export const WorldRestoredMeter: React.FC<Props> = ({ stats, isLedMode = false }
                 REMAINING
               </span>
             </div>
-            <span className="font-mono text-4xl sm:text-5xl lg:text-6xl font-black text-red-600 my-1">
+            <span className="font-mono text-5xl sm:text-6xl lg:text-7xl font-black text-red-600 my-1">
               {stats.remaining_items}
             </span>
             <span className="text-xs sm:text-sm text-slate-700 font-bold mt-1">

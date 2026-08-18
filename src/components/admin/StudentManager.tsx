@@ -32,7 +32,9 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
   const [formFirst, setFormFirst] = useState('');
   const [formLast, setFormLast] = useState('');
   const [formClass, setFormClass] = useState('ปวช.1/1');
-  const [formDept, setFormDept] = useState('เทคโนโลยีสารสนเทศ');
+  const [formSchool, setFormSchool] = useState('');
+  const [formDept, setFormDept] = useState('');
+  const [formPhone, setFormPhone] = useState('');
 
   const filteredStudents = students.filter((s) => {
     const q = searchQuery.toLowerCase();
@@ -64,7 +66,9 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
         first_name: formFirst.trim(),
         last_name: formLast.trim(),
         class_name: formClass.trim(),
-        department: formDept.trim(),
+        school_name: formSchool.trim() || undefined,
+        department: formDept.trim() || undefined,
+        phone: formPhone.trim() || undefined,
         level: 'ปวช.',
         is_valid: true,
       },
@@ -74,6 +78,9 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
     setFormCode('');
     setFormFirst('');
     setFormLast('');
+    setFormSchool('');
+    setFormDept('');
+    setFormPhone('');
     onRefresh();
   };
 
@@ -235,7 +242,7 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
 
             <form onSubmit={handleAddSingle} className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">รหัสนักเรียน</label>
+                <label className="block text-slate-300 font-semibold mb-1">รหัสนักเรียน <span className="text-mario-red">*</span></label>
                 <input
                   type="text"
                   required
@@ -248,7 +255,7 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">ชื่อ</label>
+                  <label className="block text-slate-300 font-semibold mb-1">ชื่อ <span className="text-mario-red">*</span></label>
                   <input
                     type="text"
                     required
@@ -259,7 +266,7 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">นามสกุล</label>
+                  <label className="block text-slate-300 font-semibold mb-1">นามสกุล <span className="text-mario-red">*</span></label>
                   <input
                     type="text"
                     required
@@ -272,9 +279,10 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">ห้องเรียน / ชั้น</label>
+                <label className="block text-slate-300 font-semibold mb-1">ระดับชั้น / ห้องเรียน <span className="text-mario-red">*</span></label>
                 <input
                   type="text"
+                  required
                   value={formClass}
                   onChange={(e) => setFormClass(e.target.value)}
                   placeholder="เช่น ปวช.1/1"
@@ -283,7 +291,19 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">แผนกวิชา</label>
+                <label className="block text-slate-300 font-semibold mb-1">สถานศึกษา <span className="text-mario-red">*</span></label>
+                <input
+                  type="text"
+                  required
+                  value={formSchool}
+                  onChange={(e) => setFormSchool(e.target.value)}
+                  placeholder="เช่น วิทยาลัยเทคนิค PTECH"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-semibold mb-1">สาขาวิชา <span className="text-slate-500 font-normal">(ไม่จำเป็น)</span></label>
                 <input
                   type="text"
                   value={formDept}
@@ -291,6 +311,21 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
                   placeholder="เช่น เทคโนโลยีสารสนเทศ"
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white"
                 />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-semibold mb-1">เบอร์โทร <span className="text-slate-500 font-normal">(ไม่จำเป็น)</span></label>
+                <input
+                  type="text"
+                  value={formPhone}
+                  onChange={(e) => setFormPhone(e.target.value)}
+                  placeholder="เช่น 0812345678"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white"
+                />
+              </div>
+
+              <div className="text-[10px] text-slate-500 font-medium pt-1">
+                <span className="text-mario-red">*</span> ข้อมูลที่จำเป็นต้องกรอก
               </div>
 
               <button
