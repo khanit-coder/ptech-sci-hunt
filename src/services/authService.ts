@@ -2,10 +2,11 @@ import { Profile, UserRole } from '@/types';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 // Mock users for offline / local demo mode
-const MOCK_PROFILES: Profile[] = [
+const MOCK_PROFILES: (Profile & { username: string })[] = [
   {
     id: 'user_admin_01',
     email: 'admin@ptech.ac.th',
+    username: 'admin',
     full_name: 'อาจารย์ผู้ดูแลระบบ PTECH',
     display_name: 'Admin Commander',
     role: 'admin',
@@ -16,6 +17,7 @@ const MOCK_PROFILES: Profile[] = [
   {
     id: 'user_staff_01',
     email: 'staff@ptech.ac.th',
+    username: 'staff',
     full_name: 'เจ้าหน้าที่จุดเช็คอิน โดม 1',
     display_name: 'Staff Point #01',
     role: 'staff',
@@ -26,6 +28,7 @@ const MOCK_PROFILES: Profile[] = [
   {
     id: 'user_viewer_01',
     email: 'viewer@ptech.ac.th',
+    username: 'viewer',
     full_name: 'จอแสดงผล LED Main Stage',
     display_name: 'LED Viewer',
     role: 'viewer',
@@ -88,20 +91,20 @@ class AuthService {
     return this.currentProfile;
   }
 
-  async login(email: string, password?: string): Promise<{ success: boolean; profile?: Profile; error?: string }> {
-    const cleanEmail = email.trim().toLowerCase();
+  async login(usernameOrEmail: string, password?: string): Promise<{ success: boolean; profile?: Profile; error?: string }> {
+    const input = usernameOrEmail.trim().toLowerCase();
+    if (!input) {
+      return { success: false, error: 'กรุณากรอกชื่อผู้ใช้ (Username)' };
+    }
 
     if (isSupabaseConfigured && supabase && password) {
+      const email = input.includes('@') ? input : `${input}@ptech.ac.th`;
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
+        email,
         password,
       });
 
-      if (error) {
-        return { success: false, error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' };
-      }
-
-      if (data.user) {
+      if (!error && data.user) {
         const { data: profile } = await supabase
           .from('profiles')
           .select('*')
@@ -117,19 +120,39 @@ class AuthService {
       }
     }
 
-    // Local / Demo Mock Auth
-    const found = MOCK_PROFILES.find((p) => p.email.toLowerCase() === cleanEmail) || {
+    // Match predefined local accounts by username, email, or role
+    const found = MOCK_PROFILES.find((p) => 
+      p.username.toLowerCase() === input || 
+      p.email.toLowerCase() === input ||
+      (input === 'admin' && p.role === 'admin') ||
+      (input === 'staff' && p.role === 'staff') ||
+      (input === 'viewer' && p.role === 'viewer')
+    );
+
+    if (found) {
+      this.currentProfile = found;
+      localStorage.setItem('ptech_auth_profile', JSON.stringify(this.currentProfile));
+      this.notify();
+      return { success: true, profile: this.currentProfile };
+    }
+
+    // Dynamic mock user for custom entered username
+    const isAdm = input.startsWith('admin') || input.includes('admin');
+    const isStf = input.startsWith('staff') || input.includes('staff');
+    const role: UserRole = isAdm ? 'admin' : isStf ? 'staff' : 'staff';
+
+    const dynamicProfile: Profile = {
       id: 'usr_' + Math.random().toString(36).substring(2, 9),
-      email: cleanEmail,
-      full_name: cleanEmail.startsWith('admin') ? 'Admin Officer' : 'Staff Checkpoint',
-      display_name: cleanEmail.startsWith('admin') ? 'Admin' : 'Staff Checkpoint',
-      role: (cleanEmail.startsWith('admin') ? 'admin' : cleanEmail.startsWith('view') ? 'viewer' : 'staff') as UserRole,
+      email: input.includes('@') ? input : `${input}@ptech.ac.th`,
+      full_name: isAdm ? `Admin (${input})` : `Staff (${input})`,
+      display_name: isAdm ? `Admin: ${input}` : `Staff: ${input}`,
+      role,
       is_active: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
-    this.currentProfile = found;
+    this.currentProfile = dynamicProfile;
     localStorage.setItem('ptech_auth_profile', JSON.stringify(this.currentProfile));
     this.notify();
     return { success: true, profile: this.currentProfile };
