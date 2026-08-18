@@ -116,6 +116,25 @@ class AuthService {
           localStorage.setItem('ptech_auth_profile', JSON.stringify(this.currentProfile));
           this.notify();
           return { success: true, profile: this.currentProfile };
+        } else {
+          // Auto create missing profile row in Supabase
+          const isAdm = input.startsWith('admin') || input.includes('admin') || email.startsWith('admin');
+          const newProfile: Profile = {
+            id: data.user.id,
+            email: data.user.email || email,
+            full_name: isAdm ? 'อาจารย์ผู้ดูแลระบบ PTECH' : 'เจ้าหน้าที่จุดเช็คอิน PTECH',
+            display_name: isAdm ? 'Admin Commander' : 'Staff Checkpoint',
+            role: isAdm ? 'admin' : 'staff',
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+
+          await supabase.from('profiles').insert(newProfile);
+          this.currentProfile = newProfile;
+          localStorage.setItem('ptech_auth_profile', JSON.stringify(this.currentProfile));
+          this.notify();
+          return { success: true, profile: this.currentProfile };
         }
       }
     }
