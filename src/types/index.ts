@@ -35,6 +35,7 @@ export interface ItemType {
   discovered_count?: number;
   remaining_count?: number;
   progress_percentage?: number;
+  discoveries_list?: RecentDiscoveryItem[];
   created_at?: string;
   updated_at?: string;
 }

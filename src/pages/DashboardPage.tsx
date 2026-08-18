@@ -133,16 +133,16 @@ export const DashboardPage: React.FC = () => {
       {/* 1. Hero World Restored Energy Meter */}
       <WorldRestoredMeter stats={stats} />
 
-      {/* 2. 5 Item Categories Grid */}
+      {/* 2. 5 Item Categories Grid & Hunter Discoverers (Expanded 100% Full Width) */}
       <div>
-        <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+        <div className="flex items-center justify-between mb-2.5 flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <span className="passport-badge-blue px-2.5 py-1 rounded-lg text-xs font-black flex items-center gap-1 shadow-xs">
               <Star className="w-3.5 h-3.5 text-white fill-white" />
               <span>5</span>
             </span>
             <h2 className="font-game text-xs sm:text-sm text-slate-900 tracking-wider">
-              SECRET CORE TYPES ({itemTypes.length} CATEGORIES)
+              SECRET CORE TYPES ({itemTypes.length} CATEGORIES) & DISCOVERY HUNTERS
             </h2>
           </div>
           <span className="text-xs font-mono font-bold text-slate-700 bg-white px-3 py-1 rounded-lg border-2 border-passport-border shadow-xs">
@@ -150,17 +150,12 @@ export const DashboardPage: React.FC = () => {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4 w-full items-stretch">
           {itemTypes.map((t) => (
             <ItemTypeCard key={t.id} itemType={t} />
           ))}
         </div>
       </div>
-
-      {/* 3. Recent Discoveries Radar (Passport Live Feed Section) */}
-      {settings?.show_recent_discoveries && (
-        <RecentDiscoveries discoveries={recentDiscoveries} />
-      )}
 
       {/* Stacked Discovery Notification Alert Modal */}
       {alertQueue.length > 0 && (

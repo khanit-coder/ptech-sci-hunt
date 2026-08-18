@@ -120,19 +120,12 @@ export const LEDDashboardPage: React.FC = () => {
         <WorldRestoredMeter stats={stats} isLedMode={true} />
       </div>
 
-      {/* Bottom Grid: 5 Core Types + Live Radar */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-stretch mt-1">
-        
-        {/* 5 Item Cards */}
-        <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-5 gap-2 sm:gap-2.5">
+      {/* Bottom Grid: 5 Core Types with Embedded Discoverers (Full Width) */}
+      <div className="mt-1">
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5 sm:gap-3 w-full items-stretch">
           {itemTypes.map((t) => (
             <ItemTypeCard key={t.id} itemType={t} isLedMode={true} />
           ))}
-        </div>
-
-        {/* Recent Discovery Radar */}
-        <div className="lg:col-span-4 flex flex-col">
-          <RecentDiscoveries discoveries={recentDiscoveries} isLedMode={true} />
         </div>
       </div>
 

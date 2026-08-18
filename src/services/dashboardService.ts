@@ -265,15 +265,17 @@ class DashboardService {
     const allItems = await itemService.getAllItems();
     const allDiscoveries = await discoveryService.getAllDiscoveries();
     const confirmedDisc = allDiscoveries.filter((d) => d.status === 'confirmed');
+    const recentDiscoveries = await this.getRecentDiscoveries(100);
 
     return itemTypes.map((type) => {
       const typeItems = allItems.filter((i) => i.item_type_id === type.id && i.status !== 'disabled');
       const typeItemIds = new Set(typeItems.map((i) => i.id));
+      const typeDiscoveriesList = recentDiscoveries.filter((d) => typeItemIds.has(d.item_id));
       
       const discCountFromRecords = confirmedDisc.filter((d) => typeItemIds.has(d.item_id)).length;
       const discCountFromStatus = typeItems.filter((i) => i.status === 'discovered').length;
       
-      const discoveredCount = Math.max(discCountFromRecords, discCountFromStatus);
+      const discoveredCount = Math.max(discCountFromRecords, discCountFromStatus, typeDiscoveriesList.length);
       const totalCount = typeItems.length || 5;
       const remainingCount = Math.max(0, totalCount - discoveredCount);
       const progressPercentage = totalCount === 0 ? 0 : Math.round((discoveredCount / totalCount) * 100);
@@ -284,6 +286,7 @@ class DashboardService {
         discovered_count: discoveredCount,
         remaining_count: remainingCount,
         progress_percentage: progressPercentage,
+        discoveries_list: typeDiscoveriesList,
       };
     });
   }
