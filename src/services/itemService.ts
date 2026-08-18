@@ -1,5 +1,6 @@
 import { Item, ItemType } from '@/types';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { dashboardService } from './dashboardService';
 
 export const INITIAL_ITEM_TYPES: ItemType[] = [
   {
@@ -615,11 +616,13 @@ class ItemService {
 
     this.items.push(newItem);
     this.saveState();
+    dashboardService.forceRefresh();
     return newItem;
   }
 
   async updateItem(id: string, updates: Partial<Item>): Promise<Item> {
     const { item_type, ...cleanUpdates } = updates as any;
+    let updatedResult: Item | null = null;
 
     if (isSupabaseConfigured && supabase) {
       try {
@@ -630,37 +633,44 @@ class ItemService {
           .select('*, item_type:item_types(*)')
           .maybeSingle();
         if (!error && data) {
-          return data as Item;
+          updatedResult = data as Item;
         }
       } catch (err) {
         console.warn('Supabase updateItem error:', err);
       }
     }
 
-    const idx = this.items.findIndex((i) => i.id === id);
-    if (idx === -1) {
-      return { id, ...updates } as Item;
+    if (!updatedResult) {
+      const idx = this.items.findIndex((i) => i.id === id);
+      if (idx !== -1) {
+        this.items[idx] = { ...this.items[idx], ...cleanUpdates, updated_at: new Date().toISOString() };
+        updatedResult = this.items[idx];
+      } else {
+        updatedResult = { id, ...updates } as Item;
+      }
+      this.saveState();
     }
-    this.items[idx] = { ...this.items[idx], ...cleanUpdates, updated_at: new Date().toISOString() };
-    this.saveState();
-    return this.items[idx];
+
+    dashboardService.forceRefresh();
+    return updatedResult;
   }
 
   async deleteItem(id: string): Promise<void> {
     if (isSupabaseConfigured && supabase) {
       const { error } = await supabase.from('items').delete().eq('id', id);
       if (error) throw error;
-      return;
     }
 
     this.items = this.items.filter((i) => i.id !== id);
     this.saveState();
+    dashboardService.forceRefresh();
   }
 
   public resetLocalItems() {
     this.items = [...INITIAL_ITEMS];
     this.itemTypes = [...INITIAL_ITEM_TYPES];
     this.saveState();
+    dashboardService.forceRefresh();
   }
 }
 

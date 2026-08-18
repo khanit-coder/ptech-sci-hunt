@@ -93,7 +93,7 @@ export const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="dashboard-scalable min-h-screen pb-16 pt-4 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-6 sm:space-y-8 relative">
+    <div className="dashboard-scalable min-h-screen pb-16 pt-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-6 sm:space-y-8 relative">
       
       {/* Cyber Glitch Distortion Overlay */}
       <GlitchOverlay
@@ -101,21 +101,22 @@ export const DashboardPage: React.FC = () => {
         enabled={settings?.glitch_effect_enabled ?? true}
       />
       
-      {/* Top Banner & Passport Header Toolbar */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-4 border-b-2 border-slate-300">
+      {/* Top Banner & Header Toolbar */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-5 border-b border-slate-800">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="passport-badge-red text-[11px] font-game px-3 py-1 rounded-full font-black tracking-wider shadow-sm">
+            <span className="font-game text-xs text-mario-red px-3 py-1 rounded-full bg-red-950/80 border border-red-800 text-red-300 font-bold shadow-neon-red">
               {settings?.dashboard_title || 'PTECH-Sci SURVIVOR PASSPORT'}
             </span>
-            <span className="passport-badge-yellow text-[10px] font-mono px-2 py-0.5 rounded-full font-black shadow-sm">
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-800">
               MARIO WORLD
             </span>
-            <span className="px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-300 font-mono text-[10px] font-bold">
+            <span className="px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono text-[10px] font-bold flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
               REAL-TIME
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight mt-2 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-white tracking-tight mt-2.5 flex items-center gap-2">
             <span>{settings?.tagline || 'The Game Has Begun. Science Is Your Only Way Out.'}</span>
           </h1>
         </div>
@@ -130,22 +131,19 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 1. Hero World Restored Energy Meter (Passport Section) */}
+      {/* 1. Hero World Restored Energy Meter */}
       <WorldRestoredMeter stats={stats} />
 
-      {/* 2. 5 Item Categories Grid (Passport World Map Section) */}
+      {/* 2. 5 Item Categories Grid */}
       <div>
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <div className="flex items-center gap-2.5">
-            <span className="passport-badge-blue px-2.5 py-1 rounded-lg text-xs font-black flex items-center gap-1 shadow-sm">
-              <Star className="w-3.5 h-3.5 text-white fill-white" />
-              <span>3</span>
-            </span>
-            <h2 className="font-game text-xs sm:text-sm text-slate-900 tracking-wider">
+            <span className="w-3 h-3 rounded-full bg-mario-yellow animate-pulse" />
+            <h2 className="font-game text-xs sm:text-sm text-mario-yellow tracking-wider">
               SECRET CORE TYPES ({itemTypes.length} CATEGORIES)
             </h2>
           </div>
-          <span className="text-xs font-mono font-bold text-slate-700 bg-white px-3 py-1 rounded-lg border-2 border-passport-border shadow-xs">
+          <span className="text-xs font-mono font-bold text-slate-300 bg-slate-900 px-3 py-1 rounded-xl border border-slate-800">
             {stats.discovered_items} / {stats.total_items} ITEMS RECOVERED
           </span>
         </div>

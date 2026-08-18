@@ -56,6 +56,9 @@ class DashboardService {
             if (msg.data?.type === 'NEW_DISCOVERY' && msg.data?.discovery) {
               this.notifyAlert(msg.data.discovery);
             }
+            if (msg.data?.settings) {
+              this.settings = { ...this.settings, ...msg.data.settings };
+            }
             this.notifyListeners();
           };
         } catch {
@@ -67,11 +70,17 @@ class DashboardService {
         if (e.detail?.type === 'NEW_DISCOVERY' && e.detail?.discovery) {
           this.notifyAlert(e.detail.discovery);
         }
+        if (e.detail?.settings) {
+          this.settings = { ...this.settings, ...e.detail.settings };
+        }
         this.notifyListeners();
       });
 
       window.addEventListener('storage', (e) => {
         if (e.key === 'ptech_discoveries' || e.key === 'ptech_items' || e.key === 'ptech_event_settings') {
+          if (e.key === 'ptech_event_settings' && e.newValue) {
+            try { this.settings = { ...this.settings, ...JSON.parse(e.newValue) }; } catch { /* ignore */ }
+          }
           this.notifyListeners();
         }
       });
@@ -190,6 +199,18 @@ class DashboardService {
 
     if (newSettings.sound_enabled !== undefined) {
       soundManager.setEnabled(newSettings.sound_enabled);
+    }
+
+    // Broadcast update across tabs
+    try {
+      if (this.broadcastChannel) {
+        this.broadcastChannel.postMessage({ type: 'SETTINGS_UPDATED', settings: this.settings });
+      }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('ptech_discovery_event', { detail: { type: 'SETTINGS_UPDATED', settings: this.settings } }));
+      }
+    } catch {
+      // ignore
     }
 
     this.notifyListeners();
