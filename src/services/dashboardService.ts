@@ -100,11 +100,19 @@ class DashboardService {
   }
 
   public initSupabaseRealtime() {
-    if (!isSupabaseConfigured || !supabase || this.supabaseChannel) return;
+    if (!isSupabaseConfigured || !supabase) return;
+    // If already subscribed and healthy, skip
+    if (this.supabaseChannel) {
+      const state = this.supabaseChannel.state;
+      if (state === 'joined' || state === 'joining') return;
+      // Channel dropped — remove and re-create
+      try { this.supabaseChannel.unsubscribe(); } catch { /* ignore */ }
+      this.supabaseChannel = null;
+    }
     const client = supabase;
 
     this.supabaseChannel = client
-      .channel('ptech_dashboard_realtime')
+      .channel('ptech_dashboard_realtime_v2')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'discoveries' },
@@ -145,6 +153,11 @@ class DashboardService {
         }
       )
       .subscribe();
+  }
+
+  /** Force all subscribers to re-fetch data immediately */
+  public forceRefresh() {
+    this.notifyListeners();
   }
 
   async getSettings(): Promise<EventSettings> {

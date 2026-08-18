@@ -185,18 +185,24 @@ export const StaffScanner: React.FC<Props> = ({
       const errMsg = err?.toString?.() || '';
 
       if (errMsg.includes('NotReadableError') || errMsg.includes('Could not start video source')) {
+        // Force-release any lingering MediaStream tracks the browser/OS is still holding
+        try {
+          const allStreams = await navigator.mediaDevices.getUserMedia({ video: true });
+          allStreams.getTracks().forEach(t => t.stop());
+        } catch { /* ignore — just trying to release */ }
+
         if (retryCount === 0) {
-          // First retry: try the OPPOSITE facing (front vs back) — this fixes most NotReadableError cases
+          // First retry: wait for OS to release stream, try same camera
+          setErrorMsg('กำลังรอปล่อยกล้อง...');
+          await new Promise(r => setTimeout(r, 1800));
+          return startCamera(cameraConfig, 1);
+        } else if (retryCount === 1) {
+          // Second retry: switch to opposite facing
           const alternateFacing = (cameraConfig?.facing || facingMode) === 'environment' ? 'user' : 'environment';
           setFacingMode(alternateFacing);
           setErrorMsg('กำลังลองกล้องอีกตัว...');
-          await new Promise(r => setTimeout(r, 800));
-          return startCamera({ facing: alternateFacing }, 1);
-        } else if (retryCount === 1) {
-          // Second retry: wait and try again with same config
-          setErrorMsg('กำลังลองเปิดกล้องใหม่...');
-          await new Promise(r => setTimeout(r, 1500));
-          return startCamera(cameraConfig, 2);
+          await new Promise(r => setTimeout(r, 1200));
+          return startCamera({ facing: alternateFacing }, 2);
         }
         setErrorMsg(
           'กล้องถูกแอปอื่นใช้งานอยู่ — ปิด tab/แอปอื่น แล้วกด "เปิดกล้อง" หรือใช้ปุ่ม "ถ่ายรูป/อัปโหลด" แทน'

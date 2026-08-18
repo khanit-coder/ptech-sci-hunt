@@ -56,7 +56,7 @@ export const DashboardPage: React.FC = () => {
     const savedScale = getSavedFontScale();
     applyFontScale(savedScale);
 
-    // Subscribe to live dashboard changes
+    // Subscribe to live dashboard changes (Supabase Realtime + BroadcastChannel)
     const unsub = dashboardService.subscribe(() => {
       loadData();
     });
@@ -70,9 +70,16 @@ export const DashboardPage: React.FC = () => {
       loadData();
     });
 
+    // Polling fallback: refresh every 15s in case Supabase Realtime is not configured
+    // or the websocket drops silently
+    const pollInterval = setInterval(() => {
+      loadData();
+    }, 15000);
+
     return () => {
       unsub();
       alertUnsub();
+      clearInterval(pollInterval);
     };
   }, []);
 

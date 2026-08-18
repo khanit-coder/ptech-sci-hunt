@@ -4,6 +4,7 @@ import { itemService } from '@/services/itemService';
 import { discoveryService, DiscoveryResult } from '@/services/discoveryService';
 import { studentService } from '@/services/studentService';
 import { authService } from '@/services/authService';
+import { dashboardService } from '@/services/dashboardService';
 import { soundManager } from '@/lib/sound';
 import { generateIdempotencyKey, formatDate } from '@/lib/utils';
 import { StaffScanner } from '@/components/staff/StaffScanner';
@@ -156,6 +157,8 @@ export const StaffPage: React.FC = () => {
       if (res.success) {
         setActiveStep('success');
         loadHistoryAndStats();
+        // Notify Dashboard immediately (same-browser update)
+        dashboardService.forceRefresh();
       } else if (res.code === 'ALREADY_DISCOVERED') {
         // Item genuinely already found by someone else
         setActiveStep('already_discovered');
