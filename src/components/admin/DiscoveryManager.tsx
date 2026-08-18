@@ -33,13 +33,23 @@ export const DiscoveryManager: React.FC<Props> = ({ discoveries, onRefresh }) =>
 
   const handleClaimReward = async (disc: Discovery) => {
     soundManager.playClick();
-    const profile = await authService.getCurrentUser();
-    if (!profile) return;
+    // Use synchronous getProfile() instead of async getCurrentUser() to avoid
+    // silent bail-out when session is expired/unavailable
+    const profile = authService.getProfile();
+    const staffId = profile?.id ?? 'admin-fallback';
 
     setClaimingId(disc.id);
     try {
-      await discoveryService.claimReward(disc.id, profile.id);
-      onRefresh();
+      const result = await discoveryService.claimReward(disc.id, staffId);
+      if (result.success) {
+        onRefresh();
+      } else {
+        console.error('claimReward failed:', result.message);
+        alert('มอบรางวัลไม่สำเร็จ: ' + result.message);
+      }
+    } catch (err) {
+      console.error('claimReward exception:', err);
+      alert('เกิดข้อผิดพลาด: ' + String(err));
     } finally {
       setClaimingId(null);
     }
