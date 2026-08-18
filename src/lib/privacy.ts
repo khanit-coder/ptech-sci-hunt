@@ -4,10 +4,10 @@ export function maskStudentName(
   fullName?: string | null,
   firstName?: string | null,
   lastName?: string | null,
-  mode: StudentNameDisplayMode = 'masked'
+  mode: StudentNameDisplayMode = 'full'
 ): string {
-  if (!fullName && !firstName) {
-    return 'Agent Unknown';
+  if (!fullName && !firstName && !lastName) {
+    return 'นักเรียนผู้ค้นพบ';
   }
 
   const nameToUse = fullName || `${firstName || ''} ${lastName || ''}`.trim();

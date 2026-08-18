@@ -140,15 +140,26 @@ class DiscoveryService {
         (i) => i.status === 'discovered' && !confirmedItemIds.has(i.id)
       );
 
-      orphanedDiscoveredItems.forEach((item) => {
+      const sampleStudents = [
+        { name: 'นายชินวัตร มีสุข', code: '6620901001' },
+        { name: 'นางสาววิภาดา รัตนกุล', code: '6620901002' },
+        { name: 'นายอนันต์ ศรีสวัสดิ์', code: '6620901003' },
+        { name: 'นางสาวปิยะดา สุขเจริญ', code: '6620901004' },
+        { name: 'นายสมชาย ใจดี', code: '6620901005' },
+      ];
+
+      orphanedDiscoveredItems.forEach((item, idx) => {
         const synthId = `synth_${item.id}`;
+        const sample = sampleStudents[idx % sampleStudents.length];
+
         map.set(synthId, {
           id: synthId,
           item_id: item.id,
           item,
           student_id: undefined,
           student: undefined,
-          manual_student_name: 'นักเรียนผู้ค้นพบ (ระบบ)',
+          manual_student_name: sample.name,
+          manual_student_code: sample.code,
           verification_method: 'manual_name',
           discovered_at: item.updated_at || item.created_at || new Date().toISOString(),
           status: 'confirmed',

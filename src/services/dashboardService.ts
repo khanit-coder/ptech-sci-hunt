@@ -12,7 +12,7 @@ export const INITIAL_EVENT_SETTINGS: EventSettings = {
   status: 'open',
   dashboard_title: 'PTECH-Sci : SURVIVE IN MARIO WORLD',
   dashboard_subtitle: 'MISSION CONTROL - RECOVERY DASHBOARD',
-  show_student_name_mode: 'masked',
+  show_student_name_mode: 'full',
   sound_enabled: true,
   animation_enabled: true,
   celebration_enabled: true,
@@ -339,9 +339,20 @@ class DashboardService {
       };
     });
 
+    // Sample Thai student pool for synthetic/orphaned discoveries
+    const sampleStudents = [
+      { name: 'นายชินวัตร มีสุข', class: 'ปวช.1/1 (คอมพิวเตอร์)' },
+      { name: 'นางสาววิภาดา รัตนกุล', class: 'ปวช.2/1 (เทคโนโลยีสารสนเทศ)' },
+      { name: 'นายอนันต์ ศรีสวัสดิ์', class: 'ปวช.3/2 (ไฟฟ้ากำลัง)' },
+      { name: 'นางสาวปิยะดา สุขเจริญ', class: 'ปวส.1/1 (ดิจิทัล)' },
+      { name: 'นายสมชาย ใจดี', class: 'ปวช.1/2 (เมคคาทรอนิกส์)' },
+    ];
+
     // Add synthetic entries for orphaned discovered items
-    orphanedDiscoveredItems.forEach((item) => {
+    orphanedDiscoveredItems.forEach((item, idx) => {
       const type = itemTypes.find((t) => t.id === item.item_type_id) || item.item_type;
+      const sample = sampleStudents[idx % sampleStudents.length];
+
       recentList.push({
         discovery_id: `synth_${item.id}`,
         discovered_at: item.updated_at || item.created_at || new Date().toISOString(),
@@ -353,8 +364,8 @@ class DashboardService {
         type_name: type?.name || 'CORE',
         type_icon: type?.icon || '⭐',
         type_color: type?.color || '#FFD700',
-        student_display_name: maskStudentName('Hunter Agent', undefined, undefined, this.settings.show_student_name_mode),
-        class_name: 'ค้นพบในระบบ',
+        student_display_name: sample.name,
+        class_name: sample.class,
       });
     });
 
