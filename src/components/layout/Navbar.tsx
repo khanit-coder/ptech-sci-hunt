@@ -126,7 +126,12 @@ export const Navbar: React.FC = () => {
 
           <Link
             to="/dashboard/led"
-            onClick={() => soundManager.playClick()}
+            onClick={() => {
+              soundManager.playClick();
+              if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+              }
+            }}
             className="px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 text-green-700 hover:bg-green-100 border-2 border-green-500 ml-2 shadow-xs"
           >
             <Radio className="w-3.5 h-3.5 animate-pulse" />

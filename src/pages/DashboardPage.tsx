@@ -106,22 +106,13 @@ export const DashboardPage: React.FC = () => {
           </h1>
         </div>
 
-        {/* Action Controls: Font Scale Adjuster + Status + LED Mode Link */}
+        {/* Action Controls: Font Scale Adjuster + Status */}
         <div className="flex items-center gap-2.5 flex-wrap justify-end">
           {/* Font Size Setting Control */}
           <FontSizeController />
 
           {/* Live Badge */}
           <LiveStatusBadge />
-
-          {/* Open LED Mode (16:9) */}
-          <Link
-            to="/dashboard/led"
-            className="px-3.5 py-1.5 rounded-xl passport-badge-yellow text-slate-950 text-xs font-black shadow-md flex items-center gap-1.5 hover:scale-105 transition-transform"
-          >
-            <Tv className="w-4 h-4" />
-            <span>โหมดจอ LED โดม (16:9)</span>
-          </Link>
         </div>
       </div>
 

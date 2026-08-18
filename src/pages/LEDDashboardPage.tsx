@@ -6,11 +6,8 @@ import { ItemTypeCard } from '@/components/dashboard/ItemTypeCard';
 import { RecentDiscoveries } from '@/components/dashboard/RecentDiscoveries';
 import { DiscoveryAlertModal } from '@/components/dashboard/DiscoveryAlertModal';
 import { CelebrationOverlay } from '@/components/dashboard/CelebrationOverlay';
-import { LiveStatusBadge } from '@/components/dashboard/LiveStatusBadge';
-import { FontSizeController, getSavedFontScale, applyFontScale } from '@/components/dashboard/FontSizeController';
-import { soundManager } from '@/lib/sound';
-import { Volume2, VolumeX, Maximize2, Minimize2, ArrowLeft, Radio, Star } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { getSavedFontScale, applyFontScale } from '@/components/dashboard/FontSizeController';
+import { Star } from 'lucide-react';
 
 export const LEDDashboardPage: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats>({
@@ -25,8 +22,6 @@ export const LEDDashboardPage: React.FC = () => {
   const [settings, setSettings] = useState<EventSettings | null>(null);
   const [alertQueue, setAlertQueue] = useState<Discovery[]>([]);
   const [showCelebration, setShowCelebration] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(soundManager.getIsEnabled());
-  const [isFullscreen, setIsFullscreen] = useState(Boolean(document.fullscreenElement));
 
   const loadData = async () => {
     const [s, types, recent, st] = await Promise.all([
@@ -52,6 +47,11 @@ export const LEDDashboardPage: React.FC = () => {
     const savedScale = getSavedFontScale();
     applyFontScale(savedScale);
 
+    // Auto-enter fullscreen for pure LED Dome display
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+
     const unsub = dashboardService.subscribe(() => {
       loadData();
     });
@@ -65,41 +65,26 @@ export const LEDDashboardPage: React.FC = () => {
       loadData();
     });
 
-    const handleFsChange = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement));
-    };
-
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'f' || e.key === 'F') {
         if (!['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
-          toggleFullscreen();
+          if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(() => {});
+          } else {
+            document.exitFullscreen().catch(() => {});
+          }
         }
       }
     };
 
-    document.addEventListener('fullscreenchange', handleFsChange);
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
       unsub();
       alertUnsub();
-      document.removeEventListener('fullscreenchange', handleFsChange);
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
-
-  const toggleSound = () => {
-    const next = soundManager.toggleSound();
-    setSoundEnabled(next);
-  };
-
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
-    } else {
-      document.exitFullscreen().catch(() => {});
-    }
-  };
 
   const handleDismissCurrent = () => {
     setAlertQueue((prev) => prev.slice(1));
@@ -112,48 +97,11 @@ export const LEDDashboardPage: React.FC = () => {
   return (
     <div className="dashboard-scalable w-screen h-screen max-h-screen bg-[#F0F4F8] text-slate-900 p-2.5 sm:p-4 lg:p-5 flex flex-col justify-between select-none overflow-hidden relative">
       
-      {/* Floating HUD Controls in Corner */}
-      <div className={`absolute top-3.5 right-4 z-30 flex items-center gap-2 transition-all ${
-        isFullscreen ? 'opacity-30 hover:opacity-100' : 'opacity-85 hover:opacity-100'
-      }`}>
-        {/* Compact Font Scale Controls with Keyboard Hotkeys */}
-        <FontSizeController compact enableHotkeys />
-
-        <LiveStatusBadge />
-
-        <button
-          onClick={toggleSound}
-          className={`p-2 rounded-xl border-2 border-passport-border backdrop-blur-md transition-all ${
-            soundEnabled ? 'passport-badge-yellow text-slate-900' : 'bg-white text-slate-500 hover:bg-slate-100'
-          }`}
-          title={soundEnabled ? 'ปิดเสียง' : 'เปิดเสียง'}
-        >
-          {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-        </button>
-
-        <button
-          onClick={toggleFullscreen}
-          className="p-2 rounded-xl bg-white border-2 border-passport-border text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition-all shadow-xs"
-          title={isFullscreen ? 'ออกจากเต็มจอ (F)' : 'เต็มจอ (Fullscreen - F)'}
-        >
-          {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-        </button>
-
-        <Link
-          to="/dashboard"
-          className="p-2 rounded-xl bg-white border-2 border-passport-border text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition-all shadow-xs"
-          title="กลับหน้าหลัก Dashboard"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
-      </div>
-
-      {/* Top Header: 16:9 Presentation Banner with Passport Style */}
+      {/* Top Header: Presentation Banner with Passport Style */}
       <div className="text-center space-y-1 mb-1">
         <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full passport-badge-red text-white font-game text-xs tracking-wider shadow-sm">
           <Star className="w-3.5 h-3.5 text-white fill-white" />
           <span>{settings?.dashboard_title || 'PTECH-Sci SURVIVOR PASSPORT'}</span>
-          <span className="hidden sm:inline-block text-[10px] font-mono bg-black/20 px-1.5 py-0.2 rounded font-bold">16:9 DOME</span>
         </div>
         <h1 className="font-game text-base sm:text-lg lg:text-xl text-slate-900 tracking-wide mt-1 drop-shadow-xs">
           {settings?.tagline || 'THE GAME HAS BEGUN. SCIENCE IS YOUR ONLY WAY OUT.'}
