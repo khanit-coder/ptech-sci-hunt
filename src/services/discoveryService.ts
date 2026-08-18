@@ -332,48 +332,90 @@ class DiscoveryService {
   // Claim Reward
   // --------------------------------------------------------------------------
   async claimReward(discoveryId: string, staffId: string): Promise<{ success: boolean; message: string }> {
-    if (isSupabaseConfigured && supabase) {
+    const isUuid = (id?: string) => Boolean(id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id));
+
+    if (isSupabaseConfigured && supabase && isUuid(discoveryId)) {
+      const validStaffId = isUuid(staffId) ? staffId : null;
       const { data, error } = await supabase.rpc('claim_reward_atomic', {
         p_discovery_id: discoveryId,
-        p_staff_id: staffId,
+        p_staff_id: validStaffId,
       });
-      if (error) return { success: false, message: 'เกิดข้อผิดพลาดในการมอบรางวัล' };
-      return data;
+      if (!error && data) return data;
     }
 
     const idx = this.discoveries.findIndex((d) => d.id === discoveryId);
-    if (idx === -1) return { success: false, message: 'ไม่พบรายการค้นพบ' };
+    if (idx !== -1) {
+      if (this.discoveries[idx].reward_claimed) {
+        return { success: false, message: 'รางวัลสำหรับไอเทมนี้ถูกแจกไปแล้ว' };
+      }
 
-    if (this.discoveries[idx].reward_claimed) {
-      return { success: false, message: 'รางวัลสำหรับไอเทมนี้ถูกแจกไปแล้ว' };
+      this.discoveries[idx] = {
+        ...this.discoveries[idx],
+        reward_claimed: true,
+        reward_claimed_at: new Date().toISOString(),
+        reward_given_by: staffId,
+        updated_at: new Date().toISOString(),
+      };
+      this.saveState();
+      soundManager.playClick();
+      return { success: true, message: 'บันทึกการมอบรางวัลสำเร็จ!' };
     }
 
-    this.discoveries[idx] = {
-      ...this.discoveries[idx],
-      reward_claimed: true,
-      reward_claimed_at: new Date().toISOString(),
-      reward_given_by: staffId,
-      updated_at: new Date().toISOString(),
-    };
-    this.saveState();
-    soundManager.playClick();
-    return { success: true, message: 'บันทึกการมอบรางวัลสำเร็จ!' };
+    // Handle synthetic discovery ID (e.g. synth_<item_id>)
+    if (discoveryId.startsWith('synth_')) {
+      const itemId = discoveryId.replace('synth_', '');
+      if (isSupabaseConfigured && supabase && isUuid(itemId)) {
+        try {
+          const validStaffId = isUuid(staffId) ? staffId : null;
+          await supabase.from('discoveries').insert([
+            {
+              item_id: itemId,
+              manual_student_name: 'นักเรียนผู้ค้นพบ (ระบบ)',
+              verification_method: 'manual_name',
+              reward_claimed: true,
+              reward_claimed_at: new Date().toISOString(),
+              reward_given_by: validStaffId,
+              status: 'confirmed',
+            },
+          ]);
+        } catch (err) {
+          console.warn('Supabase synthetic claim insert error:', err);
+        }
+      }
+      soundManager.playClick();
+      return { success: true, message: 'บันทึกการมอบรางวัลสำเร็จ!' };
+    }
+
+    return { success: false, message: 'ไม่พบรายการค้นพบ' };
   }
 
   // --------------------------------------------------------------------------
   // Request Correction (Staff)
   // --------------------------------------------------------------------------
   async requestCorrection(discoveryId: string, note: string): Promise<{ success: boolean; message: string }> {
-    const idx = this.discoveries.findIndex((d) => d.id === discoveryId);
-    if (idx === -1) return { success: false, message: 'ไม่พบรายการค้นพบ' };
+    const isUuid = (id?: string) => Boolean(id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id));
 
-    this.discoveries[idx] = {
-      ...this.discoveries[idx],
-      status: 'correction_requested',
-      correction_note: note,
-      updated_at: new Date().toISOString(),
-    };
-    this.saveState();
+    if (isSupabaseConfigured && supabase && isUuid(discoveryId)) {
+      try {
+        await supabase
+          .from('discoveries')
+          .update({ status: 'correction_requested', correction_note: note, updated_at: new Date().toISOString() })
+          .eq('id', discoveryId);
+      } catch (err) {
+        console.warn('Supabase requestCorrection error:', err);
+      }
+    }
+
+    const idx = this.discoveries.findIndex((d) => d.id === discoveryId);
+    if (idx !== -1) {
+      this.discoveries[idx] = {
+        ...this.discoveries[idx],
+        status: 'correction_requested',
+        correction_note: note,
+        updated_at: new Date().toISOString(),
+      };
+      this.saveState();
+    }
     return { success: true, message: 'ส่งคำขอแก้ไขไปยังผู้ดูแลระบบเรียบร้อยแล้ว' };
   }
 
@@ -381,21 +423,38 @@ class DiscoveryService {
   // Revoke Discovery (Admin Only)
   // --------------------------------------------------------------------------
   async revokeDiscovery(discoveryId: string, reason?: string): Promise<{ success: boolean; message: string }> {
-    const idx = this.discoveries.findIndex((d) => d.id === discoveryId);
-    if (idx === -1) return { success: false, message: 'ไม่พบรายการค้นพบ' };
+    const isUuid = (id?: string) => Boolean(id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id));
 
-    const disc = this.discoveries[idx];
-    disc.status = 'revoked';
-    disc.notes = (disc.notes ? disc.notes + ' | ' : '') + `Revoked: ${reason || 'Admin action'}`;
-    disc.updated_at = new Date().toISOString();
-
-    // Re-enable item status to 'active'
-    if (disc.item_id) {
-      await itemService.updateItem(disc.item_id, { status: 'active' });
+    if (isSupabaseConfigured && supabase && isUuid(discoveryId)) {
+      try {
+        await supabase
+          .from('discoveries')
+          .update({ status: 'revoked', notes: `Revoked: ${reason || 'Admin action'}`, updated_at: new Date().toISOString() })
+          .eq('id', discoveryId);
+      } catch (err) {
+        console.warn('Supabase revokeDiscovery error:', err);
+      }
     }
 
-    this.saveState();
-    this.emitEvent('REVOKED', disc);
+    const idx = this.discoveries.findIndex((d) => d.id === discoveryId);
+    if (idx !== -1) {
+      const disc = this.discoveries[idx];
+      disc.status = 'revoked';
+      disc.notes = (disc.notes ? disc.notes + ' | ' : '') + `Revoked: ${reason || 'Admin action'}`;
+      disc.updated_at = new Date().toISOString();
+
+      if (disc.item_id) {
+        await itemService.updateItem(disc.item_id, { status: 'active' });
+      }
+
+      this.saveState();
+      this.emitEvent('REVOKED', disc);
+    } else if (discoveryId.startsWith('synth_')) {
+      const itemId = discoveryId.replace('synth_', '');
+      await itemService.updateItem(itemId, { status: 'active' });
+      this.emitEvent('REVOKED', null);
+    }
+
     return { success: true, message: 'ยกเลิกการค้นพบไอเทมและคืนสถานะไอเทมเรียบร้อยแล้ว' };
   }
 
