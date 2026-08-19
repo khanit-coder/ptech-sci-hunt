@@ -7,7 +7,7 @@ import { cardTemplateService, CardTemplateItem } from "@/services/cardTemplateSe
 import { 
   X, Eye, EyeOff, Printer, RefreshCw, ChevronLeft, ChevronRight, 
   Save, FolderOpen, Trash2, CheckSquare, Square, Search, Filter,
-  Cloud, CloudCheck, Loader2
+  Cloud, Loader2
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
