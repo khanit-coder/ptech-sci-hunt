@@ -12,7 +12,7 @@ interface Props {
 }
 
 export const StudentSearchModal: React.FC<Props> = ({ onSelectStudent, onCancel }) => {
-  const [activeTab, setActiveTab] = useState<'search' | 'scan_qr' | 'register_ext' | 'manual'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'scan_qr' | 'manual'>('search');
   const [searchQuery, setSearchQuery] = useState('');
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(false);
@@ -120,8 +120,8 @@ export const StudentSearchModal: React.FC<Props> = ({ onSelectStudent, onCancel 
           </button>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 my-3 bg-slate-950 p-1 rounded-2xl border border-slate-800 shrink-0 text-xs">
+        {/* Tab Navigation (3 Tabs Only) */}
+        <div className="grid grid-cols-3 gap-1.5 my-3 bg-slate-950 p-1 rounded-2xl border border-slate-800 shrink-0 text-xs">
           <button
             type="button"
             onClick={() => setActiveTab('search')}
@@ -131,7 +131,7 @@ export const StudentSearchModal: React.FC<Props> = ({ onSelectStudent, onCancel 
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            ค้นหาชื่อ/รหัส
+            ค้นชื่อ/รหัส
           </button>
 
           <button
@@ -144,22 +144,6 @@ export const StudentSearchModal: React.FC<Props> = ({ onSelectStudent, onCancel 
             }`}
           >
             สแกน QR
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab('register_ext');
-              setIsRegisterExtOpen(true);
-            }}
-            className={`py-2 px-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 ${
-              activeTab === 'register_ext'
-                ? 'bg-mario-green text-slate-950 shadow font-extrabold'
-                : 'text-emerald-400 hover:text-emerald-300'
-            }`}
-          >
-            <UserPlus className="w-3 h-3" />
-            <span>ลงทะเบียน QR</span>
           </button>
 
           <button
@@ -284,33 +268,6 @@ export const StudentSearchModal: React.FC<Props> = ({ onSelectStudent, onCancel 
                 )}
               </div>
             )}
-          </div>
-        )}
-
-        {/* TAB 3: Register External Student Shortcut Tab */}
-        {activeTab === 'register_ext' && (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-mario-green/20 border-2 border-mario-green flex items-center justify-center text-mario-green text-3xl shadow-neon-green animate-bounce">
-              <UserPlus className="w-8 h-8" />
-            </div>
-
-            <div>
-              <h4 className="font-game text-sm text-mario-yellow">
-                ลงทะเบียนนักเรียนภายนอกด้วย QR Code
-              </h4>
-              <p className="text-xs text-slate-300 mt-1 leading-relaxed max-w-sm">
-                สแกน QR Code (สายรัดข้อมือ, บัตรผู้ร่วมงาน, ลิงก์) แล้วกรอกข้อมูลเพื่อผูกกับนักเรียน
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setIsRegisterExtOpen(true)}
-              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-mario-green to-emerald-500 text-slate-950 font-black text-xs sm:text-sm shadow-neon-green hover:opacity-95 transition-all flex items-center gap-2 pixel-btn"
-            >
-              <UserPlus className="w-4 h-4" />
-              <span>เปิดหน้าต่างลงทะเบียน QR</span>
-            </button>
           </div>
         )}
 
