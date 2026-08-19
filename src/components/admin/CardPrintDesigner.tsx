@@ -7,7 +7,7 @@ import { cardTemplateService, CardTemplateItem } from "@/services/cardTemplateSe
 import { 
   X, Eye, EyeOff, Printer, RefreshCw, ChevronLeft, ChevronRight, 
   Save, FolderOpen, Trash2, CheckSquare, Square, Search, Filter,
-  Cloud, Loader2
+  Cloud, Loader2, Palette
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -22,10 +22,10 @@ interface CardCfg {
   cols: number; rows: number;
   qrPos: Pos; qrSzPct: number; qrRot: number; qrFlipH: boolean; qrFlipV: boolean;
   qrCnt: "student_code" | "qr_token";
-  showName: boolean;   nPos: Pos;  nFpt: number;
-  showCode: boolean;   cdPos: Pos; cdFpt: number;
-  showClass: boolean;  clPos: Pos; clFpt: number;
-  showSchool: boolean; scPos: Pos; scFpt: number;
+  showName: boolean;   nPos: Pos;  nFpt: number; nColor: string;
+  showCode: boolean;   cdPos: Pos; cdFpt: number; cdColor: string;
+  showClass: boolean;  clPos: Pos; clFpt: number; clColor: string;
+  showSchool: boolean; scPos: Pos; scFpt: number; scColor: string;
   dblSided: boolean;
 }
 
@@ -39,10 +39,10 @@ const INIT: CardCfg = {
   bgFront: null, bgBack: null, paper: "A4", orient: "portrait", cols: 2, rows: 2,
   qrPos: { x: 50, y: 38 }, qrSzPct: 40, qrRot: 0, qrFlipH: false, qrFlipV: false,
   qrCnt: "student_code",
-  showName: true,   nPos:  { x: 50, y: 75 }, nFpt: 10,
-  showCode: true,   cdPos: { x: 50, y: 83 }, cdFpt: 7,
-  showClass: true,  clPos: { x: 50, y: 90 }, clFpt: 7,
-  showSchool: false, scPos: { x: 50, y: 96 }, scFpt: 7,
+  showName: true,   nPos:  { x: 50, y: 75 }, nFpt: 10, nColor: "#ffffff",
+  showCode: true,   cdPos: { x: 50, y: 83 }, cdFpt: 7,  cdColor: "#ffffff",
+  showClass: true,  clPos: { x: 50, y: 90 }, clFpt: 7,  clColor: "#ffffff",
+  showSchool: false, scPos: { x: 50, y: 96 }, scFpt: 7, scColor: "#ffffff",
   dblSided: false,
 };
 
@@ -255,10 +255,11 @@ export const CardPrintDesigner: React.FC<Props> = ({ students, onClose }) => {
   const renderCard = (s: Student, inter: boolean, isBackSide: boolean = false) => {
     const bg = isBackSide ? cfg.bgBack : cfg.bgFront;
 
-    const labelStyle = (tgt: DragTgt, x: number, y: number, fs: number, mono?: boolean): React.CSSProperties => ({
+    const labelStyle = (tgt: DragTgt, x: number, y: number, fs: number, textColor: string = "#ffffff", mono?: boolean): React.CSSProperties => ({
       position: "absolute", left: `${x}%`, top: `${y}%`,
       transform: "translate(-50%,-50%)", fontSize: `${fs}pt`,
-      color: "white", textShadow: "0 1px 5px rgba(0,0,0,1)", whiteSpace: "nowrap",
+      color: textColor || "#ffffff",
+      textShadow: "0 1px 5px rgba(0,0,0,0.9)", whiteSpace: "nowrap",
       fontFamily: mono ? "monospace" : undefined,
       cursor: inter && !isBackSide ? (act(tgt) ? "grabbing" : "grab") : "default",
       zIndex: 10, touchAction: "none",
@@ -315,25 +316,25 @@ export const CardPrintDesigner: React.FC<Props> = ({ students, onClose }) => {
             {/* Name */}
             {cfg.showName && (
               <div onMouseDown={inter ? e => onDown(e, "name") : undefined} onTouchStart={inter ? e => onDown(e, "name") : undefined}
-                style={{ ...labelStyle("name", cfg.nPos.x, cfg.nPos.y, cfg.nFpt), fontWeight: 700 }}>{s.full_name}</div>
+                style={{ ...labelStyle("name", cfg.nPos.x, cfg.nPos.y, cfg.nFpt, cfg.nColor), fontWeight: 700 }}>{s.full_name}</div>
             )}
 
             {/* Code */}
             {cfg.showCode && (
               <div onMouseDown={inter ? e => onDown(e, "code") : undefined} onTouchStart={inter ? e => onDown(e, "code") : undefined}
-                style={labelStyle("code", cfg.cdPos.x, cfg.cdPos.y, cfg.cdFpt, true)}>{s.student_code}</div>
+                style={labelStyle("code", cfg.cdPos.x, cfg.cdPos.y, cfg.cdFpt, cfg.cdColor, true)}>{s.student_code}</div>
             )}
 
             {/* Class */}
             {cfg.showClass && s.class_name && (
               <div onMouseDown={inter ? e => onDown(e, "class") : undefined} onTouchStart={inter ? e => onDown(e, "class") : undefined}
-                style={labelStyle("class", cfg.clPos.x, cfg.clPos.y, cfg.clFpt)}>{s.class_name}</div>
+                style={labelStyle("class", cfg.clPos.x, cfg.clPos.y, cfg.clFpt, cfg.clColor)}>{s.class_name}</div>
             )}
 
             {/* School */}
             {cfg.showSchool && s.school_name && (
               <div onMouseDown={inter ? e => onDown(e, "school") : undefined} onTouchStart={inter ? e => onDown(e, "school") : undefined}
-                style={labelStyle("school", cfg.scPos.x, cfg.scPos.y, cfg.scFpt)}>{s.school_name}</div>
+                style={labelStyle("school", cfg.scPos.x, cfg.scPos.y, cfg.scFpt, cfg.scColor)}>{s.school_name}</div>
             )}
           </>
         )}
@@ -519,17 +520,30 @@ export const CardPrintDesigner: React.FC<Props> = ({ students, onClose }) => {
     <div style={{ fontSize: "10px", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.1em", paddingBottom: "6px", borderBottom: "1px solid #1e293b", marginTop: "4px" }}>{ch}</div>
   );
 
-  const TextRow = ({ lbl, show, tog, fpt, sf }: { lbl: string; show: boolean; tog: () => void; fpt: number; sf: (v: number) => void }) => (
-    <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "7px 10px", borderRadius: "8px", background: "#0f172a", border: `1px solid ${show ? "#1e3a5f" : "#1e293b"}` }}>
+  const TextRow = ({ 
+    lbl, show, tog, fpt, sf, color = "#ffffff", sc 
+  }: { 
+    lbl: string; show: boolean; tog: () => void; fpt: number; sf: (v: number) => void; color?: string; sc?: (c: string) => void; 
+  }) => (
+    <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "7px 8px", borderRadius: "8px", background: "#0f172a", border: `1px solid ${show ? "#1e3a5f" : "#1e293b"}` }}>
       <button onClick={tog} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: show ? "#4ade80" : "#475569", display: "flex", flexShrink: 0 }}>
         {show ? <Eye size={14} /> : <EyeOff size={14} />}
       </button>
       <span style={{ fontSize: "11px", color: show ? "white" : "#475569", flex: 1, fontWeight: 500 }}>{lbl}</span>
       {show && (
         <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
-          <button onClick={() => sf(Math.max(6, fpt - 1))} style={{ width: 20, height: 20, background: "#1e293b", border: "1px solid #334155", borderRadius: "4px", color: "white", cursor: "pointer", fontSize: "14px", display: "flex", alignItems: "center", justifyContent: "center" }}>-</button>
-          <span style={{ fontSize: "10px", color: "#94a3b8", minWidth: "30px", textAlign: "center", fontFamily: "monospace" }}>{fpt}pt</span>
-          <button onClick={() => sf(Math.min(24, fpt + 1))} style={{ width: 20, height: 20, background: "#1e293b", border: "1px solid #334155", borderRadius: "4px", color: "white", cursor: "pointer", fontSize: "14px", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+          {sc && (
+            <input
+              type="color"
+              value={color || "#ffffff"}
+              onChange={e => sc(e.target.value)}
+              style={{ width: "20px", height: "20px", border: "none", borderRadius: "4px", cursor: "pointer", background: "transparent", padding: 0 }}
+              title="เปลี่ยนสีข้อความ"
+            />
+          )}
+          <button onClick={() => sf(Math.max(6, fpt - 1))} style={{ width: 18, height: 18, background: "#1e293b", border: "1px solid #334155", borderRadius: "4px", color: "white", cursor: "pointer", fontSize: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>-</button>
+          <span style={{ fontSize: "10px", color: "#94a3b8", minWidth: "26px", textAlign: "center", fontFamily: "monospace" }}>{fpt}pt</span>
+          <button onClick={() => sf(Math.min(24, fpt + 1))} style={{ width: 18, height: 18, background: "#1e293b", border: "1px solid #334155", borderRadius: "4px", color: "white", cursor: "pointer", fontSize: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
         </div>
       )}
     </div>
@@ -763,12 +777,12 @@ export const CardPrintDesigner: React.FC<Props> = ({ students, onClose }) => {
               </button>
             </div>
 
-            {/* Text Labels */}
-            <SecTitle ch="✏️ ข้อความ" />
-            <TextRow lbl="ชื่อนักเรียน"  show={cfg.showName}   tog={() => upd({ showName:   !cfg.showName   })} fpt={cfg.nFpt}  sf={v => upd({ nFpt:  v })} />
-            <TextRow lbl="รหัสนักเรียน" show={cfg.showCode}   tog={() => upd({ showCode:   !cfg.showCode   })} fpt={cfg.cdFpt} sf={v => upd({ cdFpt: v })} />
-            <TextRow lbl="ห้อง/ชั้น"    show={cfg.showClass}  tog={() => upd({ showClass:  !cfg.showClass  })} fpt={cfg.clFpt} sf={v => upd({ clFpt: v })} />
-            <TextRow lbl="โรงเรียน"     show={cfg.showSchool} tog={() => upd({ showSchool: !cfg.showSchool })} fpt={cfg.scFpt} sf={v => upd({ scFpt: v })} />
+            {/* Text Labels & Colors */}
+            <SecTitle ch="✏️ ข้อความ & สีตัวหนังสือ" />
+            <TextRow lbl="ชื่อนักเรียน"  show={cfg.showName}   tog={() => upd({ showName:   !cfg.showName   })} fpt={cfg.nFpt}  sf={v => upd({ nFpt:  v })} color={cfg.nColor}  sc={c => upd({ nColor:  c })} />
+            <TextRow lbl="รหัสนักเรียน" show={cfg.showCode}   tog={() => upd({ showCode:   !cfg.showCode   })} fpt={cfg.cdFpt} sf={v => upd({ cdFpt: v })} color={cfg.cdColor} sc={c => upd({ cdColor: c })} />
+            <TextRow lbl="ห้อง/ชั้น"    show={cfg.showClass}  tog={() => upd({ showClass:  !cfg.showClass  })} fpt={cfg.clFpt} sf={v => upd({ clFpt: v })} color={cfg.clColor} sc={c => upd({ clColor: c })} />
+            <TextRow lbl="โรงเรียน"     show={cfg.showSchool} tog={() => upd({ showSchool: !cfg.showSchool })} fpt={cfg.scFpt} sf={v => upd({ scFpt: v })} color={cfg.scColor} sc={c => upd({ scColor: c })} />
 
             {/* Print settings */}
             <SecTitle ch="📑 การพิมพ์" />

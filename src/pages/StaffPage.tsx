@@ -107,9 +107,8 @@ export const StaffPage: React.FC = () => {
           // Item was already scanned earlier, open confirmation directly
           setIsConfirmOpen(true);
         } else {
-          // Student is identified, inform staff to scan the item QR next
+          // Student is identified, set error null and prompt staff to scan item
           setItemError(null);
-          alert(`✅ สแกนพบนักเรียน: ${student.full_name} (${student.student_code})\n\nระบบบันทึกรายชื่อผู้รับแล้ว กรุณาสแกนหรือเลือก QR Code ของไอเทมเพื่อทำรายการให้เสร็จสมบูรณ์`);
         }
         return;
       }
@@ -144,9 +143,14 @@ export const StaffPage: React.FC = () => {
       // No discovery record found — item status is stale/inconsistent, allow staff to proceed
     }
 
-    setActiveStep('preview_item');
-    // Prompt student selection immediately
-    setIsStudentModalOpen(true);
+    // If student was already scanned/selected, open confirmation directly!
+    if (selectedStudent || manualStudentName) {
+      setActiveStep('preview_item');
+      setIsConfirmOpen(true);
+    } else {
+      setActiveStep('preview_item');
+      setIsStudentModalOpen(true);
+    }
   };
 
   // 2. Handle Student Selected
@@ -325,10 +329,32 @@ export const StaffPage: React.FC = () => {
         {/* STEP 1: SCAN ITEM QR */}
         {activeStep === 'scan_item' && (
           <div className="space-y-4">
+            {/* Pre-selected Student Banner */}
+            {selectedStudent && (
+              <div className="p-3.5 rounded-2xl bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 text-xs flex items-center justify-between gap-3 shadow-md animate-scale-pop">
+                <div className="flex items-center gap-2 min-w-0">
+                  <UserCheck className="w-5 h-5 shrink-0 text-mario-green" />
+                  <div className="min-w-0">
+                    <span className="text-[10px] text-emerald-400 font-bold block">ผู้รับรางวัลที่ระบุไว้:</span>
+                    <strong className="text-white text-xs truncate block">
+                      {selectedStudent.full_name} ({selectedStudent.student_code})
+                    </strong>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedStudent(undefined)}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold shrink-0 transition-colors"
+                >
+                  เปลี่ยนคน
+                </button>
+              </div>
+            )}
+
             <StaffScanner
               isScanning={true}
               onScanSuccess={handleItemScan}
-              label="สแกน QR Code จากไอเทม"
+              label={selectedStudent ? `สแกน QR Code ไอเทมให้ (${selectedStudent.full_name})` : "สแกน QR Code จากไอเทม หรือ QR นักเรียน"}
               subLabel="ใช้กล้องมือถือสแกน หรือถ่ายภาพ QR Code"
             />
 
