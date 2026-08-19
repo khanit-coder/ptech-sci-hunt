@@ -246,9 +246,10 @@ class StudentService {
 
     if (isSupabaseConfigured && supabase) {
       try {
-        const { data, error } = await supabase.from('students').upsert(studentRecord, { onConflict: 'student_code' }).select().single();
+        const { full_name, school_name, phone, nickname, qr_token, notes, ...dbPayload } = studentRecord;
+        const { data, error } = await supabase.from('students').upsert(dbPayload, { onConflict: 'student_code' }).select().single();
         if (!error && data) {
-          return { success: true, student: data as Student, message: 'ลงทะเบียนนักเรียนภายนอกสำเร็จ!' };
+          return { success: true, student: { ...studentRecord, ...data } as Student, message: 'ลงทะเบียนนักเรียนภายนอกสำเร็จ!' };
         }
       } catch (err) {
         console.warn('Supabase registerExternalStudent error:', err);
@@ -550,7 +551,13 @@ class StudentService {
     }));
 
     if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase.from('students').upsert(newStudents, { onConflict: 'student_code' });
+      const dbPayload = newStudents.map(({ full_name, school_name, phone, nickname, qr_token, notes, ...dbRow }) => ({
+        ...dbRow,
+        class_name: dbRow.class_name || null,
+        department: dbRow.department || null,
+        level: dbRow.level || null,
+      }));
+      const { error } = await supabase.from('students').upsert(dbPayload, { onConflict: 'student_code' });
       if (error) throw error;
       return {
         imported: validRows.length,
