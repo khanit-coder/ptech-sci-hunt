@@ -74,6 +74,21 @@ export const StaffScanner: React.FC<Props> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onScanSuccess]);
 
+  // Auto-start camera immediately when component mounts or when isScanning is true
+  useEffect(() => {
+    let isMounted = true;
+    const timer = setTimeout(() => {
+      if (isMounted && isScanning && !cameraActive) {
+        startCamera().catch(() => {});
+      }
+    }, 150);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [isScanning]);
+
   // Clean unmount
   useEffect(() => {
     return () => {

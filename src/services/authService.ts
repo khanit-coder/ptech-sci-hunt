@@ -76,29 +76,36 @@ class AuthService {
   async getCurrentUser(): Promise<Profile | null> {
     if (isSupabaseConfigured && supabase) {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        if (error || !user) {
-          // Invalidate any spoofed localStorage profile
-          this.currentProfile = null;
-          localStorage.removeItem('ptech_auth_profile');
-          return null;
-        }
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .maybeSingle();
 
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-
-        if (profile) {
-          this.currentProfile = profile as Profile;
-          localStorage.setItem('ptech_auth_profile', JSON.stringify(this.currentProfile));
-          return this.currentProfile;
+          if (profile) {
+            this.currentProfile = profile as Profile;
+            localStorage.setItem('ptech_auth_profile', JSON.stringify(this.currentProfile));
+            return this.currentProfile;
+          }
         }
       } catch (err) {
         console.error('Failed to verify session with Supabase:', err);
       }
     }
+
+    if (!this.currentProfile) {
+      const saved = localStorage.getItem('ptech_auth_profile');
+      if (saved) {
+        try {
+          this.currentProfile = JSON.parse(saved);
+        } catch {
+          this.currentProfile = null;
+        }
+      }
+    }
+
     return this.currentProfile;
   }
 
