@@ -14,6 +14,9 @@ import {
   Sparkles,
   ChevronDown,
   Clock,
+  Eye,
+  EyeOff,
+  Lock,
 } from 'lucide-react';
 
 interface Props {
@@ -28,6 +31,9 @@ export const BoothCheckinTab: React.FC<Props> = ({ profile }) => {
   const [isScanning, setIsScanning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<(BoothCheckinResult & { student_name?: string }) | null>(null);
+
+  // Hidden letter toggle state (defaults to hidden to prevent students from peeking)
+  const [showLetter, setShowLetter] = useState(false);
 
   // Load booths on mount
   useEffect(() => {
@@ -110,11 +116,30 @@ export const BoothCheckinTab: React.FC<Props> = ({ profile }) => {
       {/* Booth Selector */}
       {!selectedBooth ? (
         <div className="space-y-4">
-          <div className="text-center py-4">
-            <MapPin className="w-8 h-8 text-mario-orange mx-auto mb-2" />
-            <h3 className="font-game text-xs text-mario-yellow">เลือกบูทของคุณ</h3>
-            <p className="text-xs text-slate-400 mt-1">เลือกบูทที่คุณรับผิดชอบ</p>
+          <div className="flex items-center justify-between py-2 border-b border-slate-800">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-mario-orange" />
+              <div>
+                <h3 className="font-game text-xs text-mario-yellow">เลือกบูทประจำการของคุณ</h3>
+                <p className="text-[11px] text-slate-400">เลือกซุ้มกิจกรรมที่เจ้าหน้าที่ประจำการอยู่ขณะนี้</p>
+              </div>
+            </div>
+
+            {/* Toggle show/hide letter button */}
+            <button
+              type="button"
+              onClick={() => {
+                soundManager.playClick();
+                setShowLetter(!showLetter);
+              }}
+              className="px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
+              title={showLetter ? 'กดเพื่อซ่อนตัวอักษรประจำซุ้ม' : 'กดเพื่อแสดงตัวอักษรประจำซุ้ม'}
+            >
+              {showLetter ? <EyeOff className="w-3.5 h-3.5 text-amber-400" /> : <Eye className="w-3.5 h-3.5 text-mario-yellow" />}
+              <span>{showLetter ? '🙈 ซ่อนตัวอักษร' : '👁️ เปิดดูตัวอักษร'}</span>
+            </button>
           </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {booths.map((booth) => (
               <button
@@ -124,18 +149,20 @@ export const BoothCheckinTab: React.FC<Props> = ({ profile }) => {
                 className="flex items-center gap-3 p-4 rounded-2xl bg-slate-900 border-2 border-slate-800 hover:border-mario-orange transition-all text-left group"
               >
                 <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0 font-game font-black"
+                  className="w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0 font-game font-black transition-all"
                   style={{
                     backgroundColor: `${booth.color}25`,
                     border: `2px solid ${booth.color}60`,
-                    color: booth.color,
+                    color: showLetter ? booth.color : '#94a3b8',
                   }}
                 >
-                  {booth.letter}
+                  {showLetter ? booth.letter : <Lock className="w-5 h-5 text-slate-400" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-white text-sm truncate">{booth.name}</p>
-                  <p className="text-[11px] text-slate-400 font-mono">ตำแหน่ง #{booth.letter_position + 1}</p>
+                  <p className="text-[11px] text-slate-400 font-mono">
+                    ตัวอักษร: {showLetter ? <span className="font-game font-bold" style={{ color: booth.color }}>{booth.letter}</span> : <span className="text-slate-500 font-bold">🔒 [ซ่อนไว้]</span>} • ตำแหน่ง #{booth.letter_position + 1}
+                  </p>
                   {booth.description && (
                     <p className="text-[10px] text-slate-500 truncate">{booth.description}</p>
                   )}
@@ -149,7 +176,7 @@ export const BoothCheckinTab: React.FC<Props> = ({ profile }) => {
         <>
           {/* Active Booth Header */}
           <div
-            className="flex items-center justify-between p-4 rounded-2xl border-2"
+            className="flex items-center justify-between p-4 rounded-2xl border-2 shadow-md"
             style={{
               backgroundColor: `${selectedBooth.color}15`,
               borderColor: `${selectedBooth.color}50`,
@@ -157,29 +184,52 @@ export const BoothCheckinTab: React.FC<Props> = ({ profile }) => {
           >
             <div className="flex items-center gap-3">
               <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center font-game text-xl font-black"
+                className="w-12 h-12 rounded-xl flex items-center justify-center font-game text-xl font-black shrink-0 transition-all cursor-pointer"
                 style={{
                   backgroundColor: `${selectedBooth.color}25`,
                   border: `2px solid ${selectedBooth.color}80`,
-                  color: selectedBooth.color,
+                  color: showLetter ? selectedBooth.color : '#94a3b8',
                 }}
+                onClick={() => setShowLetter(!showLetter)}
+                title="คลิกเพื่อสลับซ่อน/เปิดดูตัวอักษร"
               >
-                {selectedBooth.letter}
+                {showLetter ? selectedBooth.letter : <Lock className="w-5 h-5 text-slate-400" />}
               </div>
               <div>
-                <p className="font-bold text-white">{selectedBooth.name}</p>
+                <p className="font-bold text-white text-sm">{selectedBooth.name}</p>
                 <p className="text-xs font-mono" style={{ color: selectedBooth.color }}>
-                  ตัวอักษร: {selectedBooth.letter} • ตำแหน่ง #{selectedBooth.letter_position + 1}
+                  ตัวอักษร: {showLetter ? <span className="font-game font-bold text-base">{selectedBooth.letter}</span> : <span className="text-slate-400 font-bold">🔒 [ซ่อนไว้]</span>} • ตำแหน่ง #{selectedBooth.letter_position + 1}
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => { setSelectedBooth(null); setResult(null); }}
-              className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold hover:bg-slate-700 transition-colors"
-            >
-              เปลี่ยนบูท
-            </button>
+
+            <div className="flex items-center gap-2">
+              {/* Show/Hide Letter Toggle Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  soundManager.playClick();
+                  setShowLetter(!showLetter);
+                }}
+                className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm ${
+                  showLetter
+                    ? 'bg-amber-950/80 border border-amber-500/80 text-amber-300 hover:bg-amber-900'
+                    : 'bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700'
+                }`}
+                title={showLetter ? 'กดเพื่อซ่อนตัวอักษรประจำซุ้ม' : 'กดเพื่อเปิดแสดงตัวอักษรประจำซุ้ม'}
+              >
+                {showLetter ? <EyeOff className="w-3.5 h-3.5 text-amber-400" /> : <Eye className="w-3.5 h-3.5 text-mario-yellow" />}
+                <span>{showLetter ? '🙈 ซ่อนตัวอักษร' : '👁️ เปิดดูตัวอักษร'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setSelectedBooth(null); setResult(null); }}
+                className="px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bold hover:bg-slate-700 transition-colors"
+              >
+                เปลี่ยนบูท
+              </button>
+            </div>
           </div>
 
           {/* Scanner Area */}
@@ -220,10 +270,12 @@ export const BoothCheckinTab: React.FC<Props> = ({ profile }) => {
               {result.success ? (
                 <>
                   <div
-                    className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto text-4xl font-game font-black shadow-neon-green"
+                    className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto text-4xl font-game font-black shadow-neon-green cursor-pointer transition-transform hover:scale-105"
                     style={{ backgroundColor: `${selectedBooth.color}30`, border: `3px solid ${selectedBooth.color}` }}
+                    onClick={() => setShowLetter(!showLetter)}
+                    title="คลิกเพื่อสลับซ่อน/เปิดดูตัวอักษร"
                   >
-                    {result.letter}
+                    {showLetter ? result.letter : <Lock className="w-8 h-8 text-amber-400" />}
                   </div>
                   <div>
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-mario-green/30 text-mario-green font-mono text-xs font-bold mb-2">
@@ -233,9 +285,20 @@ export const BoothCheckinTab: React.FC<Props> = ({ profile }) => {
                     <h3 className="font-bold text-white text-base mt-1">
                       {result.student_name || result.student?.full_name || 'นักเรียน'}
                     </h3>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-slate-400 mt-1">
                       ได้รับตัวอักษร:{' '}
-                      <span className="font-game text-mario-yellow text-lg">{result.letter}</span>
+                      {showLetter ? (
+                        <span className="font-game text-mario-yellow text-lg">{result.letter}</span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setShowLetter(true)}
+                          className="text-amber-400 font-bold hover:underline inline-flex items-center gap-1 ml-1 text-xs"
+                        >
+                          <Lock className="w-3 h-3" />
+                          <span>[กดเพื่อเปิดดูตัวอักษร]</span>
+                        </button>
+                      )}
                       {' '}จาก {result.booth_name || selectedBooth.name}
                     </p>
                   </div>
