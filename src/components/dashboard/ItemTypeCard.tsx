@@ -1,6 +1,6 @@
 import React from 'react';
 import { ItemType } from '@/types';
-import { CheckCircle2, User, Clock, Award } from 'lucide-react';
+import { CheckCircle2, User, Clock } from 'lucide-react';
 import { formatTimeOnly } from '@/lib/utils';
 
 interface Props {
@@ -9,11 +9,12 @@ interface Props {
 }
 
 export const ItemTypeCard: React.FC<Props> = ({ itemType, isLedMode = false }) => {
-  const total = itemType.total_count || 5;
+  const total = itemType.total_count || 2;
   const discovered = itemType.discovered_count || 0;
   const percentage = total === 0 ? 0 : Math.round((discovered / total) * 100);
   const isComplete = discovered >= total && total > 0;
   const discoveriesList = itemType.discoveries_list || [];
+  const slotCount = Math.max(total, discoveriesList.length);
 
   return (
     <div
@@ -118,16 +119,16 @@ export const ItemTypeCard: React.FC<Props> = ({ itemType, isLedMode = false }) =
         <div className="flex items-center justify-between text-[10px] font-mono font-bold text-slate-700 mb-1.5">
           <span className="flex items-center gap-1 text-slate-900 font-black">
             <User className="w-3.5 h-3.5 text-mario-blue" />
-            <span>DISCOVERY HUNTERS ({discoveriesList.length}/5)</span>
+            <span>DISCOVERY HUNTERS ({discoveriesList.length}/{total})</span>
           </span>
           {discoveriesList.length > 0 && (
             <span className="text-emerald-700 font-bold">LIVE SCANS</span>
           )}
         </div>
 
-        {/* 5 Slots Stretched to Fill 100% Card Height */}
+        {/* Slots Stretched to Fill 100% Card Height */}
         <div className="flex-1 flex flex-col justify-between gap-2">
-          {[...Array(5)].map((_, slotIdx) => {
+          {[...Array(slotCount)].map((_, slotIdx) => {
             const disc = discoveriesList[slotIdx];
 
             if (disc) {
@@ -137,9 +138,9 @@ export const ItemTypeCard: React.FC<Props> = ({ itemType, isLedMode = false }) =
                   className="flex-1 p-2.5 sm:p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2 text-xs sm:text-sm hover:bg-amber-50/60 transition-colors shadow-2xs min-h-[46px]"
                 >
                   <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <span className="font-mono font-black text-[10px] px-1.5 py-0.3 rounded bg-slate-900 text-amber-300 border border-slate-700 shrink-0">
-                      {disc.item_code}
-                    </span>
+                    <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-800 border border-amber-300 flex items-center justify-center shrink-0 font-bold">
+                      <User className="w-4 h-4 text-mario-blue" />
+                    </div>
                     <div className="min-w-0 flex-1">
                       <span className="font-bold text-slate-900 text-xs sm:text-sm truncate block leading-snug">
                         {disc.student_display_name}
@@ -152,18 +153,11 @@ export const ItemTypeCard: React.FC<Props> = ({ itemType, isLedMode = false }) =
                     </div>
                   </div>
 
-                  <div className="text-right shrink-0 flex flex-col items-end pl-1">
-                    <span className="font-mono text-[10px] sm:text-[11px] text-slate-600 font-bold flex items-center gap-0.5">
-                      <Clock className="w-3 h-3 text-slate-400" />
+                  <div className="text-right shrink-0 flex items-center pl-1">
+                    <span className="font-mono text-[10px] sm:text-[11px] text-slate-600 font-bold flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-2xs">
+                      <Clock className="w-3.5 h-3.5 text-slate-400" />
                       {formatTimeOnly(disc.discovered_at)}
                     </span>
-                    {disc.reward_claimed ? (
-                      <span className="text-[10px] text-green-700 font-black flex items-center gap-0.5 mt-0.5">
-                        <Award className="w-3 h-3 text-green-600" /> รับแล้ว
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-amber-700 font-bold mt-0.5">รอรับรางวัล</span>
-                    )}
                   </div>
                 </div>
               );

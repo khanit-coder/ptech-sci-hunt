@@ -76,9 +76,6 @@ export const RecentDiscoveries: React.FC<Props> = ({ discoveries, isLedMode = fa
 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] font-mono font-black px-1.5 py-0.2 rounded bg-slate-900 text-amber-300 border border-slate-700">
-                      {disc.item_code}
-                    </span>
                     <span className="text-xs font-black text-slate-900 truncate">
                       {disc.item_name}
                     </span>
@@ -102,22 +99,12 @@ export const RecentDiscoveries: React.FC<Props> = ({ discoveries, isLedMode = fa
                 </div>
               </div>
 
-              {/* Right: Time & Reward Status */}
-              <div className="text-right shrink-0 flex flex-col items-end pl-2">
-                <div className="flex items-center gap-1 text-xs font-mono font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-xs">
-                  <Clock className="w-3 h-3 text-slate-500" />
+              {/* Right: Time */}
+              <div className="text-right shrink-0 flex items-center pl-2">
+                <div className="flex items-center gap-1 text-xs font-mono font-bold text-slate-800 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-xs">
+                  <Clock className="w-3.5 h-3.5 text-slate-500" />
                   <span>{formatTimeOnly(disc.discovered_at)}</span>
                 </div>
-
-                {disc.reward_claimed ? (
-                  <span className="text-[10px] text-green-800 font-black flex items-center gap-1 mt-1 bg-green-100 px-2 py-0.5 rounded border border-green-300">
-                    <Award className="w-3 h-3 text-green-700" /> รับรางวัลแล้ว
-                  </span>
-                ) : (
-                  <span className="text-[10px] text-amber-800 font-bold mt-1 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
-                    รอรับรางวัล
-                  </span>
-                )}
               </div>
             </div>
           ))}
