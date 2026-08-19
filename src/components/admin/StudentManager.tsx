@@ -62,16 +62,6 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
   const internalCount = useMemo(() => students.filter((s) => s.student_status !== 'external').length, [students]);
   const externalCount = useMemo(() => students.filter((s) => s.student_status === 'external').length, [students]);
 
-  // Target lists for QR printing (uses sorted/filtered view)
-  const printInternalList = useMemo(
-    () => sortedStudents.filter((s) => s.student_status !== 'external'),
-    [sortedStudents]
-  );
-  const printExternalList = useMemo(
-    () => sortedStudents.filter((s) => s.student_status === 'external'),
-    [sortedStudents]
-  );
-
   // Extract unique options for dropdown filters
   const classList = useMemo(() => {
     const set = new Set<string>();
@@ -146,6 +136,16 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
       return sortOrder === 'asc' ? comparison : -comparison;
     });
   }, [filteredStudents, sortBy, sortOrder]);
+
+  // Target lists for QR printing (uses sorted/filtered view)
+  const printInternalList = useMemo(
+    () => sortedStudents.filter((s) => s.student_status !== 'external'),
+    [sortedStudents]
+  );
+  const printExternalList = useMemo(
+    () => sortedStudents.filter((s) => s.student_status === 'external'),
+    [sortedStudents]
+  );
 
   const handleDeleteStudent = async (s: Student) => {
     if (confirm(`คุณแน่ใจหรือไม่ที่จะลบรายชื่อนักเรียน "${s.full_name}" (รหัส: ${s.student_code})?`)) {
