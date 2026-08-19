@@ -85,16 +85,37 @@ export const StaffPage: React.FC = () => {
     return () => unsub();
   }, []);
 
-  // 1. Handle Item QR Scanned
+  // 1. Handle Item or Student QR Scanned
   const handleItemScan = async (tokenOrCode: string) => {
     soundManager.playClick();
-    setScannedToken(tokenOrCode);
+    const cleanToken = tokenOrCode.trim();
+    setScannedToken(cleanToken);
     setItemError(null);
 
-    const item = await itemService.getItemByQrToken(tokenOrCode);
+    // 1. Try finding as Item QR
+    let item = await itemService.getItemByQrToken(cleanToken);
+
+    // 2. If NOT an Item, check if it is a Student QR (e.g. EXT-001H1EU or Student Code)
     if (!item) {
+      const student = await studentService.findStudentByQr(cleanToken);
+      if (student) {
+        soundManager.playDiscovery();
+        setSelectedStudent(student);
+        setVerificationMethod('external_qr');
+
+        if (scannedItem) {
+          // Item was already scanned earlier, open confirmation directly
+          setIsConfirmOpen(true);
+        } else {
+          // Student is identified, inform staff to scan the item QR next
+          setItemError(null);
+          alert(`✅ สแกนพบนักเรียน: ${student.full_name} (${student.student_code})\n\nระบบบันทึกรายชื่อผู้รับแล้ว กรุณาสแกนหรือเลือก QR Code ของไอเทมเพื่อทำรายการให้เสร็จสมบูรณ์`);
+        }
+        return;
+      }
+
       soundManager.playError();
-      setItemError(`ไม่พบข้อมูลไอเทมสำหรับรหัส "${tokenOrCode}" หรือ QR Code ไม่ถูกต้อง`);
+      setItemError(`ไม่พบข้อมูลไอเทมหรือนักเรียนสำหรับรหัส "${cleanToken}" หรือ QR Code ไม่ถูกต้อง`);
       return;
     }
 

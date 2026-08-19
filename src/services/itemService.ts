@@ -577,12 +577,24 @@ class ItemService {
     const cleanToken = qrToken.trim();
 
     if (isSupabaseConfigured && supabase) {
-      const { data } = await supabase
-        .from('items')
-        .select('*, item_type:item_types(*)')
-        .eq('qr_token', cleanToken)
-        .single();
-      return (data as Item) || null;
+      try {
+        const { data } = await supabase
+          .from('items')
+          .select('*, item_type:item_types(*)')
+          .eq('qr_token', cleanToken)
+          .maybeSingle();
+        if (data) return data as Item;
+
+        // Fallback search by item_code in Supabase
+        const { data: byCode } = await supabase
+          .from('items')
+          .select('*, item_type:item_types(*)')
+          .ilike('item_code', cleanToken)
+          .maybeSingle();
+        if (byCode) return byCode as Item;
+      } catch (err) {
+        console.warn('Supabase getItemByQrToken error, falling back to local:', err);
+      }
     }
 
     this.syncFromStorage();

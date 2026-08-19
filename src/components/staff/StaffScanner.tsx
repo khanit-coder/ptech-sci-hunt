@@ -133,6 +133,20 @@ export const StaffScanner: React.FC<Props> = ({
     setShowPermissionHelp(false);
 
     try {
+      // Ensure DOM element container is rendered and has clientWidth > 0
+      let container = document.getElementById(scannerContainerId);
+      let waitTime = 0;
+      while ((!container || container.clientWidth === 0) && waitTime < 800) {
+        await new Promise((r) => setTimeout(r, 100));
+        container = document.getElementById(scannerContainerId);
+        waitTime += 100;
+      }
+
+      if (!container) {
+        setErrorMsg('ไม่พบพื้นที่แสดงกล้อง กรุณากดลองใหม่อีกครั้ง');
+        return;
+      }
+
       // Stop & destroy existing scanner before creating new one
       if (scannerRef.current) {
         try {
