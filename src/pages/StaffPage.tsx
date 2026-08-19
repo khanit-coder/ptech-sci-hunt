@@ -12,6 +12,7 @@ import { StudentSearchModal } from '@/components/staff/StudentSearchModal';
 import { ExternalStudentRegisterModal } from '@/components/staff/ExternalStudentRegisterModal';
 import { DiscoveryConfirmDialog } from '@/components/staff/DiscoveryConfirmDialog';
 import { StaffHistoryList } from '@/components/staff/StaffHistoryList';
+import { BoothCheckinTab } from '@/components/staff/BoothCheckinTab';
 import { LiveStatusBadge } from '@/components/dashboard/LiveStatusBadge';
 import { 
   ScanLine, 
@@ -29,11 +30,13 @@ import {
   UserPlus,
   QrCode,
   Users,
-  Search
+  Search,
+  MapPin
 } from 'lucide-react';
 
 export const StaffPage: React.FC = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [mainTab, setMainTab] = useState<'item_checkin' | 'booth_checkin'>('item_checkin');
   const [activeStep, setActiveStep] = useState<'scan_item' | 'preview_item' | 'success' | 'already_discovered'>('scan_item');
   
   // Selected state
@@ -64,6 +67,10 @@ export const StaffPage: React.FC = () => {
     const p = await authService.getCurrentUser();
     setProfile(p);
     if (p) {
+      const isBoothDuty = p.staff_duty === 'booth_staff' || Boolean(p.assigned_booth_name) || Boolean(p.assigned_booth_id);
+      if (isBoothDuty && p.role !== 'admin') {
+        setMainTab('booth_checkin');
+      }
       const all = await discoveryService.getStaffDiscoveries(p.id);
       setHistoryList(all);
     }
@@ -227,6 +234,9 @@ export const StaffPage: React.FC = () => {
     }
   };
 
+  const isAdmin = profile?.role === 'admin';
+  const isBoothStaff = profile?.role === 'staff' && (profile?.staff_duty === 'booth_staff' || Boolean(profile?.assigned_booth_name) || Boolean(profile?.assigned_booth_id));
+
   return (
     <div className="w-full min-h-screen bg-mario-deepBg text-slate-100 pb-20 pt-4 px-4 sm:px-6">
       <div className="max-w-2xl mx-auto space-y-5">
@@ -237,12 +247,52 @@ export const StaffPage: React.FC = () => {
             <div className="flex items-center gap-1.5">
               <span className="font-game text-xs text-mario-red">PTECH-Sci</span>
               <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-mario-orange/20 text-mario-orange border border-mario-orange/40 uppercase">
-                ITEM SCANNER
+                {mainTab === 'booth_checkin' ? 'BOOTH CHECK-IN' : 'ITEM SCANNER'}
               </span>
             </div>
-            <p className="text-xs text-slate-400 font-medium">จุดตรวจไอเทมลับ: {profile?.display_name || 'Staff Checkpoint'}</p>
+            <p className="text-xs text-slate-400 font-medium">
+              {mainTab === 'booth_checkin' ? 'จุดตรวจซุ้มกิจกรรม:' : 'จุดตรวจไอเทมลับ:'} {profile?.display_name || 'Staff Checkpoint'}
+            </p>
           </div>
         </div>
+
+        {/* Admin Only Tab Switcher */}
+        {isAdmin && (
+          <div className="flex gap-2 p-1 bg-slate-900/80 rounded-2xl border border-slate-800">
+            <button
+              type="button"
+              onClick={() => { soundManager.playClick(); setMainTab('item_checkin'); }}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                mainTab === 'item_checkin'
+                  ? 'bg-mario-orange text-white shadow-neon-red'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <QrCode className="w-3.5 h-3.5" />
+              เช็คอินไอเทม
+            </button>
+            <button
+              type="button"
+              onClick={() => { soundManager.playClick(); setMainTab('booth_checkin'); }}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                mainTab === 'booth_checkin'
+                  ? 'bg-gradient-to-r from-mario-blue to-sci-cyan text-white shadow-neon-cyan'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <MapPin className="w-3.5 h-3.5" />
+              เช็คอินบูทกิจกรรม
+            </button>
+          </div>
+        )}
+
+        {/* ── BOOTH CHECK-IN TAB (For Booth Staff or Admin switching to booth tab) ── */}
+        {mainTab === 'booth_checkin' && (
+          <BoothCheckinTab profile={profile} />
+        )}
+
+        {/* ── ITEM CHECK-IN SCANNER TAB ── */}
+        {mainTab === 'item_checkin' && (<>
 
         {/* STEP 1: SCAN ITEM QR */}
         {activeStep === 'scan_item' && (
@@ -506,6 +556,7 @@ export const StaffPage: React.FC = () => {
             isSubmitting={isSubmitting}
           />
         )}
+        </>)}
       </div>
     </div>
   );
