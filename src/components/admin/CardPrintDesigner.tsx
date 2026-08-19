@@ -259,7 +259,7 @@ export const CardPrintDesigner: React.FC<Props> = ({ students, onClose }) => {
       position: "absolute", left: `${x}%`, top: `${y}%`,
       transform: "translate(-50%,-50%)", fontSize: `${fs}pt`,
       color: textColor || "#ffffff",
-      textShadow: "0 1px 5px rgba(0,0,0,0.9)", whiteSpace: "nowrap",
+      whiteSpace: "nowrap",
       fontFamily: mono ? "monospace" : undefined,
       cursor: inter && !isBackSide ? (act(tgt) ? "grabbing" : "grab") : "default",
       zIndex: 10, touchAction: "none",
