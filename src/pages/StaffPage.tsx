@@ -149,12 +149,13 @@ export const StaffPage: React.FC = () => {
       const res = await discoveryService.confirmDiscovery({
         qr_token: scannedItem.qr_token,
         student_id: selectedStudent?.id,
-        manual_student_name: manualStudentName,
-        manual_student_code: manualStudentCode,
+        manual_student_name: manualStudentName || selectedStudent?.full_name,
+        manual_student_code: manualStudentCode || selectedStudent?.student_code,
         staff_id: profile?.id,
         verification_method: verificationMethod,
         idempotency_key: idempotencyKey,
       });
+
 
       setDiscoveryResult(res);
       setIsConfirmOpen(false);

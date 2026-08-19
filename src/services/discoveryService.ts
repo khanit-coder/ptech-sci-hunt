@@ -203,27 +203,34 @@ class DiscoveryService {
       this.processedKeys.add(idempotency_key);
     }
 
+    // 2. Validate UUID format for Supabase RPC
+    const isUuid = (str?: string) => Boolean(str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str));
+    const validStudentId = isUuid(student_id) ? student_id : null;
+    const validStaffId = isUuid(staff_id) ? staff_id : null;
+
     // If Supabase is connected, invoke the server-side RPC atomic function
     if (isSupabaseConfigured && supabase) {
       const { data, error } = await supabase.rpc('confirm_discovery_atomic', {
         p_qr_token: qr_token,
-        p_student_id: student_id || null,
+        p_student_id: validStudentId,
         p_manual_student_name: manual_student_name || null,
         p_manual_student_code: manual_student_code || null,
-        p_staff_id: staff_id || null,
+        p_staff_id: validStaffId,
         p_verification_method: verification_method,
         p_notes: notes || null,
         p_idempotency_key: idempotency_key || null,
       });
 
       if (error) {
+        console.error('Supabase confirm_discovery_atomic error:', error);
         soundManager.playError();
         return {
           success: false,
           code: 'DATABASE_ERROR',
-          message: 'เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล',
+          message: error.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล',
         };
       }
+
 
       if (!data.success) {
         soundManager.playError();

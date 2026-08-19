@@ -3,7 +3,7 @@ import { StudentProvider, StudentSearchFilter, StudentVerificationResult } from 
 
 export const INITIAL_STUDENTS: Student[] = [
   {
-    id: 's1',
+    id: '00000000-0000-4000-8000-000000000001',
     student_code: '66209010001',
     first_name: 'สมชาย',
     last_name: 'สายวิทย์',
@@ -14,7 +14,7 @@ export const INITIAL_STUDENTS: Student[] = [
     student_status: 'active',
   },
   {
-    id: 's2',
+    id: '00000000-0000-4000-8000-000000000002',
     student_code: '66209010002',
     first_name: 'วิภาดา',
     last_name: 'ใจมั่นคง',
@@ -25,7 +25,7 @@ export const INITIAL_STUDENTS: Student[] = [
     student_status: 'active',
   },
   {
-    id: 's3',
+    id: '00000000-0000-4000-8000-000000000003',
     student_code: '66209010003',
     first_name: 'ธนพล',
     last_name: 'สุขสวัสดิ์',
@@ -36,7 +36,7 @@ export const INITIAL_STUDENTS: Student[] = [
     student_status: 'active',
   },
   {
-    id: 's4',
+    id: '00000000-0000-4000-8000-000000000004',
     student_code: '66209010004',
     first_name: 'กานต์ดา',
     last_name: 'ประเสริฐยิ่ง',
@@ -47,7 +47,7 @@ export const INITIAL_STUDENTS: Student[] = [
     student_status: 'active',
   },
   {
-    id: 's5',
+    id: '00000000-0000-4000-8000-000000000005',
     student_code: '66209010005',
     first_name: 'ณัฐวุฒิ',
     last_name: 'ทองคำ',
@@ -58,7 +58,7 @@ export const INITIAL_STUDENTS: Student[] = [
     student_status: 'active',
   },
   {
-    id: 's6',
+    id: '00000000-0000-4000-8000-000000000006',
     student_code: '66209010006',
     first_name: 'ปวีณา',
     last_name: 'รุ่งเรือง',
@@ -69,7 +69,7 @@ export const INITIAL_STUDENTS: Student[] = [
     student_status: 'active',
   },
   {
-    id: 's7',
+    id: '00000000-0000-4000-8000-000000000007',
     student_code: '66309010007',
     first_name: 'จิรภัทร',
     last_name: 'เก่งกาจ',
@@ -80,7 +80,7 @@ export const INITIAL_STUDENTS: Student[] = [
     student_status: 'active',
   },
   {
-    id: 's8',
+    id: '00000000-0000-4000-8000-000000000008',
     student_code: '66309010008',
     first_name: 'สิริพร',
     last_name: 'งามวิไล',
@@ -91,7 +91,7 @@ export const INITIAL_STUDENTS: Student[] = [
     student_status: 'active',
   },
   {
-    id: 's9',
+    id: '00000000-0000-4000-8000-000000000009',
     student_code: '66309010009',
     first_name: 'พงศกร',
     last_name: 'เดชารัตน์',
@@ -102,7 +102,7 @@ export const INITIAL_STUDENTS: Student[] = [
     student_status: 'active',
   },
   {
-    id: 's10',
+    id: '00000000-0000-4000-8000-000000000010',
     student_code: '66309010010',
     first_name: 'อารียา',
     last_name: 'พิทักษ์ธรรม',
@@ -113,6 +113,7 @@ export const INITIAL_STUDENTS: Student[] = [
     student_status: 'active',
   },
 ];
+
 
 export class MockStudentProvider implements StudentProvider {
   name = 'Mock Local Student Provider';

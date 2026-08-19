@@ -58,10 +58,16 @@ class StudentService {
 
     const shortId = cleanToken.replace(/[^a-zA-Z0-9]/g, '').slice(-4).toUpperCase() || Math.random().toString(36).substring(2, 6).toUpperCase();
     const generatedCode = input.student_code?.trim() || `EXT-${shortId}`;
+    const generateUuid = () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : '00000000-0000-4000-8000-' + Math.random().toString(16).substring(2, 14).padStart(12, '0');
 
     const studentRecord: Student = {
-      id: 'ext_' + Math.random().toString(36).substring(2, 9),
+      id: generateUuid(),
       student_code: generatedCode,
+
+
       first_name: input.first_name.trim(),
       last_name: input.last_name?.trim() || '',
       full_name: `${input.first_name.trim()} ${input.last_name?.trim() || ''}`.trim(),
@@ -301,9 +307,15 @@ class StudentService {
   // Commit valid student records into Database
   async importStudents(previewRows: ImportPreviewRow[]): Promise<{ imported: number; updated: number; skipped: number; errors: number }> {
     const validRows = previewRows.filter((r) => r.is_valid);
+    const generateUuid = () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : '00000000-0000-4000-8000-' + Math.random().toString(16).substring(2, 14).padStart(12, '0');
+
     const newStudents: Student[] = validRows.map((r) => ({
-      id: 'stu_' + Math.random().toString(36).substring(2, 9),
+      id: generateUuid(),
       student_code: r.student_code,
+
       first_name: r.first_name,
       last_name: r.last_name,
       full_name: `${r.first_name} ${r.last_name}`,

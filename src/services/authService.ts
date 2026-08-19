@@ -4,7 +4,7 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 // Mock users for offline / local demo mode
 const MOCK_PROFILES: (Profile & { username: string })[] = [
   {
-    id: 'user_admin_01',
+    id: '00000000-0000-4000-8000-000000000099',
     email: 'admin@ptech.ac.th',
     username: 'admin',
     full_name: 'อาจารย์ผู้ดูแลระบบ PTECH',
@@ -15,7 +15,7 @@ const MOCK_PROFILES: (Profile & { username: string })[] = [
     updated_at: new Date().toISOString(),
   },
   {
-    id: 'user_staff_01',
+    id: '00000000-0000-4000-8000-000000000098',
     email: 'staff@ptech.ac.th',
     username: 'staff',
     full_name: 'เจ้าหน้าที่จุดเช็คอิน โดม 1',
@@ -26,7 +26,7 @@ const MOCK_PROFILES: (Profile & { username: string })[] = [
     updated_at: new Date().toISOString(),
   },
   {
-    id: 'user_viewer_01',
+    id: '00000000-0000-4000-8000-000000000097',
     email: 'viewer@ptech.ac.th',
     username: 'viewer',
     full_name: 'จอแสดงผล LED Main Stage',
@@ -37,6 +37,7 @@ const MOCK_PROFILES: (Profile & { username: string })[] = [
     updated_at: new Date().toISOString(),
   },
 ];
+
 
 class AuthService {
   private currentProfile: Profile | null = null;
