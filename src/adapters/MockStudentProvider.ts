@@ -279,6 +279,14 @@ export class MockStudentProvider implements StudentProvider {
     return { students: paged, total };
   }
 
+  deleteStudentsByStatus(status: 'internal' | 'external'): void {
+    if (status === 'external') {
+      this.students = this.students.filter((s) => s.student_status !== 'external');
+    } else {
+      this.students = this.students.filter((s) => s.student_status === 'external');
+    }
+  }
+
   async isHealthy(): Promise<boolean> {
     return true;
   }

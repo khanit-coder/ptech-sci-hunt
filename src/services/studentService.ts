@@ -315,6 +315,32 @@ class StudentService {
     return { success: true, message: 'ลบรายชื่อนักเรียนสำเร็จ' };
   }
 
+  async deleteStudentsByStatus(status: 'internal' | 'external'): Promise<{ success: boolean; message: string }> {
+    const label = status === 'external' ? 'นักเรียนภายนอก' : 'นักเรียนภายใน';
+    if (isSupabaseConfigured && supabase) {
+      try {
+        let query = supabase.from('students').delete();
+        if (status === 'external') {
+          query = query.eq('student_status', 'external');
+        } else {
+          query = query.or('student_status.eq.active,student_status.is.null,student_status.neq.external');
+        }
+        const { error } = await query;
+        if (error) {
+          return { success: false, message: error.message || `ไม่สามารถลบรายชื่อ ${label} ได้` };
+        }
+        return { success: true, message: `ลบรายชื่อ ${label} ทั้งหมดสำเร็จ` };
+      } catch (err: any) {
+        return { success: false, message: err.message || 'เกิดข้อผิดพลาดในการลบ' };
+      }
+    }
+
+    if (this.provider instanceof MockStudentProvider) {
+      this.provider.deleteStudentsByStatus(status);
+    }
+    return { success: true, message: `ลบรายชื่อ ${label} ทั้งหมดสำเร็จ` };
+  }
+
   async deleteAllStudents(): Promise<{ success: boolean; message: string }> {
     if (isSupabaseConfigured && supabase) {
       try {

@@ -159,6 +159,30 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
     }
   };
 
+  const handleDeleteByStatus = async (status: 'internal' | 'external') => {
+    const targetCount = status === 'external' ? externalCount : internalCount;
+    const label = status === 'external' ? 'นักเรียนภายนอก' : 'นักเรียนภายใน';
+    if (targetCount === 0) return;
+
+    soundManager.playError();
+    const confirmed = confirm(`⚠️ คำเตือน: คุณแน่ใจหรือไม่ที่จะลบรายชื่อ ${label} ทั้งหมดจำนวน ${targetCount} คน?\n\nการดำเนินการนี้ไม่สามารถย้อนกลับได้!`);
+    if (!confirmed) return;
+
+    const userInput = prompt(`โปรดพิมพ์คำว่า "DELETE" เพื่อยืนยันการลบ ${label} จำนวน ${targetCount} คน:`);
+    if (userInput?.toUpperCase() === 'DELETE') {
+      soundManager.playClick();
+      const res = await studentService.deleteStudentsByStatus(status);
+      if (res.success) {
+        alert(`ลบรายชื่อ ${label} ทั้งหมดเรียบร้อยแล้ว`);
+        onRefresh();
+      } else {
+        alert(res.message);
+      }
+    } else if (userInput !== null) {
+      alert('คำยืนยันไม่ถูกต้อง ไม่ได้ลบข้อมูล');
+    }
+  };
+
   const handleDeleteAll = async () => {
     if (students.length === 0) return;
     soundManager.playError();
@@ -326,17 +350,41 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
             </button>
           </div>
 
-          {/* Delete All Students Button */}
-          <button
-            type="button"
-            onClick={handleDeleteAll}
-            disabled={students.length === 0}
-            className="px-3.5 py-2 rounded-xl bg-red-950/80 border border-red-600/80 text-red-300 hover:bg-red-900 hover:border-red-500 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-40"
-            title="ลบรายชื่อนักเรียนทั้งหมดในระบบ"
-          >
-            <Trash2 className="w-3.5 h-3.5 text-red-400" />
-            <span>ลบนักเรียนทั้งหมด ({students.length})</span>
-          </button>
+          {/* Delete Buttons Group */}
+          <div className="flex items-center gap-1 bg-red-950/60 p-1 rounded-xl border border-red-800/80">
+            <button
+              type="button"
+              onClick={() => handleDeleteByStatus('internal')}
+              disabled={internalCount === 0}
+              className="px-2.5 py-1 rounded bg-red-900/60 hover:bg-red-800 text-red-200 text-[11px] font-bold disabled:opacity-30 transition-all flex items-center gap-1 cursor-pointer"
+              title="ลบรายชื่อนักเรียนภายในทั้งหมด"
+            >
+              <Trash2 className="w-3 h-3 text-red-400" />
+              <span>ลบภายใน ({internalCount})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleDeleteByStatus('external')}
+              disabled={externalCount === 0}
+              className="px-2.5 py-1 rounded bg-red-900/60 hover:bg-red-800 text-red-200 text-[11px] font-bold disabled:opacity-30 transition-all flex items-center gap-1 cursor-pointer"
+              title="ลบรายชื่อนักเรียนภายนอกทั้งหมด"
+            >
+              <Trash2 className="w-3 h-3 text-red-400" />
+              <span>ลบภายนอก ({externalCount})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleDeleteAll}
+              disabled={students.length === 0}
+              className="px-2.5 py-1 rounded bg-red-800 hover:bg-red-700 text-white text-[11px] font-bold disabled:opacity-30 transition-all flex items-center gap-1 cursor-pointer"
+              title="ลบรายชื่อนักเรียนทั้งหมดในระบบ"
+            >
+              <Trash2 className="w-3 h-3 text-white" />
+              <span>ลบทั้งหมด ({students.length})</span>
+            </button>
+          </div>
 
           {/* Import Wizard Button */}
           <button
