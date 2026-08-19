@@ -86,31 +86,19 @@ export const StaffHistoryList: React.FC<Props> = ({ discoveries, onRefresh }) =>
                 </div>
               </div>
 
-              {/* Reward & Action Buttons */}
+              {/* Status Badge */}
               <div className="flex items-center gap-2 shrink-0">
-                {disc.reward_claimed ? (
-                  <span className="px-3 py-1.5 rounded-xl bg-mario-green/20 text-mario-green border border-mario-green/40 text-xs font-bold flex items-center gap-1.5">
-                    <CheckCircle className="w-3.5 h-3.5" />
-                    <span>แจกรางวัลแล้ว</span>
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    disabled={claimingId === disc.id}
-                    onClick={() => handleClaimReward(disc)}
-                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-yellow-500 to-amber-600 text-slate-950 text-xs font-extrabold shadow hover:opacity-95 transition-all flex items-center gap-1.5"
-                  >
-                    <Gift className="w-3.5 h-3.5" />
-                    <span>{claimingId === disc.id ? 'กำลังบันทึก...' : 'REWARD GIVEN (มอบรางวัล)'}</span>
-                  </button>
-                )}
+                <span className="px-3 py-1.5 rounded-xl bg-mario-green/20 text-mario-green border border-mario-green/40 text-xs font-bold flex items-center gap-1.5">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  <span>เช็คอินสำเร็จ</span>
+                </span>
 
                 {/* Correction Request Button */}
                 <button
                   type="button"
                   onClick={() => setCorrectingDisc(disc)}
                   title="แจ้งขอแก้ไขข้อมูล"
-                  className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                  className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors cursor-pointer"
                 >
                   <MessageSquarePlus className="w-4 h-4" />
                 </button>

@@ -147,7 +147,6 @@ export const DiscoveryManager: React.FC<Props> = ({ discoveries, onRefresh }) =>
                 <th className="py-3.5 px-4">ผู้ค้นพบ (Student)</th>
                 <th className="py-3.5 px-4">เวลาที่ค้นพบ</th>
                 <th className="py-3.5 px-4">เจ้าหน้าที่ / วิธี</th>
-                <th className="py-3.5 px-4">รางวัล</th>
                 <th className="py-3.5 px-4">สถานะ</th>
                 <th className="py-3.5 px-4 text-right">การจัดการ</th>
               </tr>
@@ -202,23 +201,11 @@ export const DiscoveryManager: React.FC<Props> = ({ discoveries, onRefresh }) =>
                       </span>
                     </td>
 
-                    {/* Reward */}
+                    {/* Status */}
                     <td className="py-3 px-4">
-                      {d.reward_claimed ? (
-                        <span className="text-[11px] text-mario-green font-bold flex items-center gap-1">
-                          <CheckCircle className="w-3.5 h-3.5" /> รับแล้ว
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={claimingId === d.id}
-                          onClick={() => handleClaimReward(d)}
-                          className="px-2.5 py-1 rounded-lg bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 border border-yellow-500/40 text-[11px] font-bold flex items-center gap-1 transition-colors"
-                        >
-                          <Gift className="w-3 h-3 text-yellow-400" />
-                          <span>{claimingId === d.id ? 'กำลังบันทึก...' : 'มอบรางวัล'}</span>
-                        </button>
-                      )}
+                      <span className="text-[11px] text-mario-green font-bold flex items-center gap-1">
+                        <CheckCircle className="w-3.5 h-3.5" /> บันทึกแล้ว
+                      </span>
                     </td>
 
                     {/* Status & Correction notes */}
