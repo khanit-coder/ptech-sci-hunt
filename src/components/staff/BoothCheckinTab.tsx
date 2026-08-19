@@ -35,16 +35,33 @@ export const BoothCheckinTab: React.FC<Props> = ({ profile }) => {
   // Hidden letter toggle state (defaults to hidden to prevent students from peeking)
   const [showLetter, setShowLetter] = useState(false);
 
-  // Load booths on mount
+  const isBoothStaff = Boolean(profile?.assigned_booth_id || profile?.assigned_booth_name);
+  const canChangeBooth = profile?.role === 'admin' || profile?.staff_duty === 'item_scanner' || !isBoothStaff;
+
+  // Load booths on mount and auto-select assigned booth
   useEffect(() => {
     const load = async () => {
       setIsLoadingBooths(true);
       const all = await boothService.getBooths();
-      setBooths(all.filter((b) => b.is_active));
+      const activeBooths = all.filter((b) => b.is_active);
+      setBooths(activeBooths);
+
+      // Auto-select assigned booth if staff has assigned_booth_id / assigned_booth_name
+      if (profile?.assigned_booth_id || profile?.assigned_booth_name) {
+        const assigned = activeBooths.find(
+          (b) =>
+            b.id === profile.assigned_booth_id ||
+            b.name.toLowerCase().includes(profile.assigned_booth_name?.toLowerCase() || '') ||
+            (profile.assigned_booth_name && b.name.toLowerCase().includes(profile.assigned_booth_name.toLowerCase()))
+        );
+        if (assigned) {
+          setSelectedBooth(assigned);
+        }
+      }
       setIsLoadingBooths(false);
     };
     load();
-  }, []);
+  }, [profile]);
 
   // Load today's checkins when booth selected
   const loadCheckins = useCallback(async () => {
@@ -116,12 +133,16 @@ export const BoothCheckinTab: React.FC<Props> = ({ profile }) => {
       {/* Booth Selector */}
       {!selectedBooth ? (
         <div className="space-y-4">
-          <div className="flex items-center justify-between py-2 border-b border-slate-800">
+          <div className="flex items-center justify-between py-2 border-b border-slate-800 flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <MapPin className="w-5 h-5 text-mario-orange" />
               <div>
-                <h3 className="font-game text-xs text-mario-yellow">เลือกบูทประจำการของคุณ</h3>
-                <p className="text-[11px] text-slate-400">เลือกซุ้มกิจกรรมที่เจ้าหน้าที่ประจำการอยู่ขณะนี้</p>
+                <h3 className="font-game text-xs text-mario-yellow">
+                  {profile?.staff_duty === 'item_scanner' ? '🔍 สตาฟสแกนไอเท็ม — เลือกบูทเพื่อสแกนนักเรียน' : 'เลือกบูทประจำการของคุณ'}
+                </h3>
+                <p className="text-[11px] text-slate-400">
+                  {profile?.staff_duty === 'item_scanner' ? 'คุณสามารถเลือกสแกนเช็คอินให้นักเรียนได้ทุกบูทกิจกรรม' : 'เลือกซุ้มกิจกรรมที่เจ้าหน้าที่ประจำการอยู่ขณะนี้'}
+                </p>
               </div>
             </div>
 
@@ -196,7 +217,14 @@ export const BoothCheckinTab: React.FC<Props> = ({ profile }) => {
                 {showLetter ? selectedBooth.letter : <Lock className="w-5 h-5 text-slate-400" />}
               </div>
               <div>
-                <p className="font-bold text-white text-sm">{selectedBooth.name}</p>
+                <p className="font-bold text-white text-sm flex items-center gap-2">
+                  <span>{selectedBooth.name}</span>
+                  {!canChangeBooth && (
+                    <span className="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-mario-yellow font-mono font-bold border border-slate-700">
+                      🔒 ประจำการเฉพาะบูธนี้
+                    </span>
+                  )}
+                </p>
                 <p className="text-xs font-mono" style={{ color: selectedBooth.color }}>
                   ตัวอักษร: {showLetter ? <span className="font-game font-bold text-base">{selectedBooth.letter}</span> : <span className="text-slate-400 font-bold">🔒 [ซ่อนไว้]</span>} • ตำแหน่ง #{selectedBooth.letter_position + 1}
                 </p>
@@ -222,13 +250,16 @@ export const BoothCheckinTab: React.FC<Props> = ({ profile }) => {
                 <span>{showLetter ? '🙈 ซ่อนตัวอักษร' : '👁️ เปิดดูตัวอักษร'}</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => { setSelectedBooth(null); setResult(null); }}
-                className="px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bold hover:bg-slate-700 transition-colors"
-              >
-                เปลี่ยนบูท
-              </button>
+              {/* Change Booth Button (Allowed for Item Scanner staff and Admin) */}
+              {canChangeBooth && (
+                <button
+                  type="button"
+                  onClick={() => { setSelectedBooth(null); setResult(null); }}
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bold hover:bg-slate-700 transition-colors"
+                >
+                  เปลี่ยนบูท
+                </button>
+              )}
             </div>
           </div>
 
