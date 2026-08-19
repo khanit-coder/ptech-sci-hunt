@@ -149,6 +149,17 @@ class BoothService {
   // ----------------------------------------------------------------
 
   /**
+   * Directly check-in a known Student object at a booth (bypasses student lookup query).
+   */
+  async checkinStudentObj(
+    boothId: string,
+    student: Student,
+    staffId?: string
+  ): Promise<BoothCheckinResult> {
+    return this.doCheckin(boothId, student, staffId);
+  }
+
+  /**
    * Scan student QR (student_code or qr_token) at a booth.
    * Returns letter awarded if successful.
    */

@@ -75,7 +75,7 @@ export const SimulatorModal: React.FC<Props> = ({ onClose, onRefresh }) => {
         const initialTimer = setTimeout(() => {
           const intervalTimer = setInterval(async () => {
             const randomStudent = allStudents[Math.floor(Math.random() * allStudents.length)];
-            const res = await boothService.checkinStudent(booth.id, randomStudent.student_code);
+            const res = await boothService.checkinStudentObj(booth.id, randomStudent);
 
             const timeStr = new Date().toLocaleTimeString();
             const logText = res.success
@@ -89,9 +89,8 @@ export const SimulatorModal: React.FC<Props> = ({ onClose, onRefresh }) => {
 
             setTotalSimulatedScans((prev) => prev + 1);
 
-            // Notify real-time dashboards
+            // Light-weight debounced dashboard refresh (does not lag browser)
             dashboardService.forceRefresh();
-            onRefresh();
           }, Math.max(1, intervalSeconds) * 1000);
 
           activeTimersRef.current.push(intervalTimer);
@@ -99,6 +98,13 @@ export const SimulatorModal: React.FC<Props> = ({ onClose, onRefresh }) => {
 
         activeTimersRef.current.push(initialTimer);
       });
+
+      // Background throttled refresh for AdminPage stats (every 4 seconds)
+      const statsRefreshTimer = setInterval(() => {
+        onRefresh();
+      }, 4000);
+      activeTimersRef.current.push(statsRefreshTimer);
+
     } finally {
       setIsSimulating(false);
     }
@@ -110,6 +116,7 @@ export const SimulatorModal: React.FC<Props> = ({ onClose, onRefresh }) => {
     activeTimersRef.current.forEach((t) => clearInterval(t as any));
     activeTimersRef.current = [];
     setIsTrafficSimulating(false);
+    onRefresh(); // Final refresh when stopped
   };
 
   // 1. Simulate single discovery

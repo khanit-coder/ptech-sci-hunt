@@ -169,9 +169,15 @@ class DashboardService {
       .subscribe();
   }
 
-  /** Force all subscribers to re-fetch data immediately */
+  private refreshDebounceTimer: NodeJS.Timeout | null = null;
+
+  /** Force all subscribers to re-fetch data (debounced to max 1 refresh per 300ms) */
   public forceRefresh() {
-    this.notifyListeners();
+    if (this.refreshDebounceTimer) return;
+    this.refreshDebounceTimer = setTimeout(() => {
+      this.refreshDebounceTimer = null;
+      this.notifyListeners();
+    }, 300);
   }
 
   async getSettings(): Promise<EventSettings> {
