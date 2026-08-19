@@ -46,8 +46,9 @@ export const LEDDashboardPage: React.FC = () => {
     loadData();
     dashboardService.initSupabaseRealtime();
 
-    const savedScale = getSavedFontScale();
-    applyFontScale(savedScale);
+    const savedScale = getSavedFontScale(1.35);
+    const initialScale = savedScale < 1.35 ? 1.35 : savedScale;
+    applyFontScale(initialScale);
 
     // Auto-enter fullscreen for pure LED Dome display
     if (!document.fullscreenElement) {

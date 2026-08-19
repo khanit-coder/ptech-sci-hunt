@@ -36,6 +36,10 @@ export const EventSettingsForm: React.FC<Props> = ({ settings, onRefresh }) => {
   const [showRecent, setShowRecent] = useState(settings.show_recent_discoveries);
   const [showHints, setShowHints] = useState(settings.show_item_hints);
   const [glitchEffectEnabled, setGlitchEffectEnabled] = useState(settings.glitch_effect_enabled ?? true);
+  const [raffleWeightMode, setRaffleWeightMode] = useState<'progressive' | 'linear' | 'equal'>(settings.raffle_weight_mode || 'progressive');
+  const [raffleMinBooths, setRaffleMinBooths] = useState<number>(settings.raffle_min_booths ?? 1);
+  const [raffleEnableItemBonus, setRaffleEnableItemBonus] = useState<boolean>(settings.raffle_enable_item_bonus ?? true);
+  const [raffleBonusPercent, setRaffleBonusPercent] = useState<number>(settings.raffle_bonus_percent ?? 100);
   const [isSaved, setIsSaved] = useState(false);
 
   // Multi-step Emergency Reset protection state
@@ -58,6 +62,10 @@ export const EventSettingsForm: React.FC<Props> = ({ settings, onRefresh }) => {
       show_recent_discoveries: showRecent,
       show_item_hints: showHints,
       glitch_effect_enabled: glitchEffectEnabled,
+      raffle_weight_mode: raffleWeightMode,
+      raffle_min_booths: raffleMinBooths,
+      raffle_enable_item_bonus: raffleEnableItemBonus,
+      raffle_bonus_percent: raffleBonusPercent,
     });
 
     await adminService.logAction('SETTINGS_UPDATED', 'event_settings', '1');
@@ -281,7 +289,7 @@ export const EventSettingsForm: React.FC<Props> = ({ settings, onRefresh }) => {
                 <Sparkles className="w-3.5 h-3.5 text-purple-400" />
                 <span>Cyber-Glitch</span>
               </span>
-              <span className="text-[10px] text-slate-500">เอฟเฟกต์มิติพังตาม % ความเสถียร</span>
+              <span className="text-[10px] text-slate-500">เอฟเฟกต์ไฟกระพริบ Cyber-Glitch</span>
             </div>
             <input
               type="checkbox"
@@ -290,6 +298,82 @@ export const EventSettingsForm: React.FC<Props> = ({ settings, onRefresh }) => {
               className="w-5 h-5 rounded accent-mario-orange"
             />
           </label>
+        </div>
+
+        {/* 🎰 Lucky Draw Grand Prize Config Section (หลังบ้าน) */}
+        <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
+            <Sparkles className="w-4 h-4 text-mario-yellow" />
+            <h4 className="font-bold text-mario-yellow text-xs uppercase tracking-wider">
+              🎰 การตั้งค่าระบบสุ่มรางวัลใหญ่ (Grand Prize Lucky Draw Settings)
+            </h4>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Weight Mode */}
+            <div className="space-y-1">
+              <label className="block text-slate-300 font-semibold text-[11px]">
+                รูปแบบการคำนวณโอกาสจากจำนวนตัวอักษรที่สะสม:
+              </label>
+              <select
+                value={raffleWeightMode}
+                onChange={(e) => setRaffleWeightMode(e.target.value as any)}
+                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-bold"
+              >
+                <option value="progressive">🔥 ทวีคูณความขยัน (สะสมครบ 100% โอกาสสูงกว่ามาก) [แนะนำ]</option>
+                <option value="linear">📊 ตามสัดส่วนตัวอักษร (100%, 80%, 60%, 40%...)</option>
+                <option value="equal">⚖️ สิทธิ์เท่ากันทุกคน (สะสมอย่างน้อย 1 ซุ้ม)</option>
+              </select>
+            </div>
+
+            {/* Min Booths Filter */}
+            <div className="space-y-1">
+              <label className="block text-slate-300 font-semibold text-[11px]">
+                เงื่อนไขขั้นต่ำในการเข้าร่วมสุ่ม:
+              </label>
+              <select
+                value={raffleMinBooths}
+                onChange={(e) => setRaffleMinBooths(Number(e.target.value))}
+                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-bold"
+              >
+                <option value={1}>🌟 สะสมอย่างน้อย 1 ซุ้มขึ้นไป (เปิดโอกาสให้ทุกคน)</option>
+                <option value={3}>⭐ สะสมตั้งแต่ 50% ขึ้นไป</option>
+                <option value={5}>🏆 สะสมครบ 100% เท่านั้น</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2 border-t border-slate-800/80">
+            <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-200">
+              <input
+                type="checkbox"
+                checked={raffleEnableItemBonus}
+                onChange={(e) => setRaffleEnableItemBonus(e.target.checked)}
+                className="w-4 h-4 rounded text-mario-yellow accent-mario-orange"
+              />
+              <span>เพิ่มโบนัสโอกาสชนะสุ่มสำหรับผู้ที่ค้นพบไอเท็มลับ</span>
+            </label>
+
+            {raffleEnableItemBonus && (
+              <div className="flex items-center gap-2 bg-slate-900 p-1.5 rounded-xl border border-slate-800 text-xs">
+                <span className="text-xs text-slate-400 px-2 font-mono">โบนัสไอเท็มลับ:</span>
+                {[50, 100, 200].map((pct) => (
+                  <button
+                    key={pct}
+                    type="button"
+                    onClick={() => setRaffleBonusPercent(pct)}
+                    className={`px-3 py-1 rounded-lg font-mono font-bold transition-all ${
+                      raffleBonusPercent === pct
+                        ? 'bg-mario-yellow text-slate-950 font-black scale-105 shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    +{pct}% ({1 + pct / 100}x)
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <button

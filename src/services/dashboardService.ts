@@ -23,6 +23,11 @@ export const INITIAL_EVENT_SETTINGS: EventSettings = {
   // Booth system
   target_word: 'SAVEPTECHWORLD',
   booths_enabled: true,
+  // Lucky Draw system
+  raffle_weight_mode: 'progressive',
+  raffle_min_booths: 1,
+  raffle_enable_item_bonus: true,
+  raffle_bonus_percent: 100,
 };
 
 

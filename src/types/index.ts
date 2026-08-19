@@ -168,6 +168,11 @@ export interface EventSettings {
   // Booth system
   target_word: string;
   booths_enabled: boolean;
+  // Lucky Draw / Grand Prize Settings
+  raffle_weight_mode?: 'progressive' | 'linear' | 'equal';
+  raffle_min_booths?: number;
+  raffle_enable_item_bonus?: boolean;
+  raffle_bonus_percent?: number;
   created_at?: string;
   updated_at?: string;
 }

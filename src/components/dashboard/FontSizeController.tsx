@@ -5,26 +5,27 @@ import { soundManager } from '@/lib/sound';
 export const FONT_SCALE_KEY = 'ptech_dashboard_font_scale';
 
 export const FONT_PRESETS = [
-  { label: 'กะทัดรัด (90%)', scale: 0.90, tag: '90%' },
   { label: 'ปกติ (100%)', scale: 1.0, tag: '100%' },
-  { label: 'ใหญ่ (110%)', scale: 1.10, tag: '110%' },
-  { label: 'ใหญ่พิเศษ (120%)', scale: 1.20, tag: '120%' },
-  { label: 'ขยายชัดเจน (130%)', scale: 1.30, tag: '130%' },
+  { label: 'ใหญ่ (120%)', scale: 1.20, tag: '120%' },
+  { label: '✨ LED Dome 16:9 (135%)', scale: 1.35, tag: '135%' },
+  { label: 'ขยายใหญ่พิเศษ (150%)', scale: 1.50, tag: '150%' },
+  { label: 'ระดับป้าย (175%)', scale: 1.75, tag: '175%' },
+  { label: 'สูงสุด (200%)', scale: 2.0, tag: '200%' },
 ];
 
-export const getSavedFontScale = (): number => {
+export const getSavedFontScale = (defaultScale: number = 1.0): number => {
   try {
     const saved = localStorage.getItem(FONT_SCALE_KEY);
     if (saved) {
       const val = parseFloat(saved);
-      if (!isNaN(val) && val >= 0.75 && val <= 1.5) {
+      if (!isNaN(val) && val >= 0.75 && val <= 2.2) {
         return val;
       }
     }
   } catch {
     /* ignore */
   }
-  return 1.0;
+  return defaultScale;
 };
 
 export const applyFontScale = (scale: number) => {
@@ -93,7 +94,7 @@ export const FontSizeController: React.FC<Props> = ({ compact = false, enableHot
 
       if (e.key === '=' || e.key === '+' || e.key === ']') {
         e.preventDefault();
-        changeScale(Math.min(1.35, +(scale + 0.1).toFixed(2)));
+        changeScale(Math.min(2.0, +(scale + 0.1).toFixed(2)));
       } else if (e.key === '-' || e.key === '_' || e.key === '[') {
         e.preventDefault();
         changeScale(Math.max(0.85, +(scale - 0.1).toFixed(2)));
@@ -109,7 +110,7 @@ export const FontSizeController: React.FC<Props> = ({ compact = false, enableHot
 
   const changeScale = (newScale: number) => {
     soundManager.playClick();
-    const clean = Math.min(1.35, Math.max(0.85, +(newScale).toFixed(2)));
+    const clean = Math.min(2.0, Math.max(0.85, +(newScale).toFixed(2)));
     setScale(clean);
     applyFontScale(clean);
   };
@@ -141,7 +142,7 @@ export const FontSizeController: React.FC<Props> = ({ compact = false, enableHot
         <button
           type="button"
           onClick={() => changeScale(scale + 0.1)}
-          disabled={scale >= 1.35}
+          disabled={scale >= 2.0}
           title="เพิ่มขนาดตัวอักษร (A+ / Hotkey: +)"
           className="p-1.5 rounded-lg text-slate-700 hover:text-slate-950 hover:bg-slate-100 disabled:opacity-30 transition-all font-mono font-bold text-xs flex items-center gap-0.5"
         >
@@ -184,7 +185,7 @@ export const FontSizeController: React.FC<Props> = ({ compact = false, enableHot
         <button
           type="button"
           onClick={() => changeScale(scale + 0.1)}
-          disabled={scale >= 1.35}
+          disabled={scale >= 2.0}
           title="เพิ่มขนาดตัวอักษร (A+)"
           className="p-1.5 rounded-lg text-slate-700 hover:text-slate-950 hover:bg-slate-100 disabled:opacity-30 transition-all"
         >
