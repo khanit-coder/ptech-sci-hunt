@@ -288,11 +288,49 @@ class StudentService {
         .from('students')
         .select('*')
         .order('student_code', { ascending: true })
-        .limit(300);
+        .limit(1000);
       if (data) return data as Student[];
     }
-    const res = await this.provider.searchStudents({ limit: 500 });
+    const res = await this.provider.searchStudents({ limit: 1000 });
     return res.students;
+  }
+
+  async deleteStudent(studentId: string): Promise<{ success: boolean; message: string }> {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('students').delete().eq('id', studentId);
+        if (error) {
+          return { success: false, message: error.message || 'ไม่สามารถลบนักเรียนได้' };
+        }
+        return { success: true, message: 'ลบรายชื่อนักเรียนสำเร็จ' };
+      } catch (err: any) {
+        return { success: false, message: err.message || 'เกิดข้อผิดพลาดในการลบ' };
+      }
+    }
+
+    if (this.provider instanceof MockStudentProvider) {
+      this.provider.deleteStudent(studentId);
+    }
+    return { success: true, message: 'ลบรายชื่อนักเรียนสำเร็จ' };
+  }
+
+  async deleteAllStudents(): Promise<{ success: boolean; message: string }> {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('students').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        if (error) {
+          return { success: false, message: error.message || 'ไม่สามารถลบนักเรียนทั้งหมดได้' };
+        }
+        return { success: true, message: 'ลบรายชื่อนักเรียนทั้งหมดสำเร็จ' };
+      } catch (err: any) {
+        return { success: false, message: err.message || 'เกิดข้อผิดพลาดในการลบ' };
+      }
+    }
+
+    if (this.provider instanceof MockStudentProvider) {
+      this.provider.clearAllStudents();
+    }
+    return { success: true, message: 'ลบรายชื่อนักเรียนทั้งหมดสำเร็จ' };
   }
 
   // --------------------------------------------------------------------------
@@ -308,6 +346,7 @@ class StudentService {
       class_name: '',
       department: '',
       level: '',
+      school_name: '',
     };
 
     headers.forEach((h) => {
@@ -371,6 +410,15 @@ class StudentService {
       ) {
         if (!mapping.level) mapping.level = h;
       }
+      // School Name
+      else if (
+        clean.includes('โรงเรียน') ||
+        clean.includes('สถาบัน') ||
+        clean.includes('school') ||
+        clean.includes('college')
+      ) {
+        if (!mapping.school_name) mapping.school_name = h;
+      }
     });
 
     return mapping;
@@ -412,19 +460,33 @@ class StudentService {
     });
   }
 
-  // Validate parsed rows against mapped columns
-  validateRows(rows: any[], mapping: Record<string, string>): { preview: ImportPreviewRow[]; validCount: number; errorCount: number } {
+  // Validate parsed rows against mapped columns or fixed custom text values
+  validateRows(
+    rows: any[],
+    mapping: Record<string, string>,
+    customValues: Record<string, string> = {}
+  ): { preview: ImportPreviewRow[]; validCount: number; errorCount: number } {
     const seenCodes = new Set<string>();
     let validCount = 0;
     let errorCount = 0;
 
     const preview: ImportPreviewRow[] = rows.map((row, idx) => {
-      const code = String(row[mapping.student_code] || '').trim();
-      const first = String(row[mapping.first_name] || '').trim();
-      const last = String(row[mapping.last_name] || '').trim();
-      const className = mapping.class_name ? String(row[mapping.class_name] || '').trim() : '';
-      const dept = mapping.department ? String(row[mapping.department] || '').trim() : '';
-      const level = mapping.level ? String(row[mapping.level] || '').trim() : '';
+      const getValue = (fieldKey: string) => {
+        const mappedCol = mapping[fieldKey];
+        if (mappedCol && mappedCol !== '__CUSTOM__' && row[mappedCol] !== undefined) {
+          const rawVal = String(row[mappedCol]).trim();
+          if (rawVal) return rawVal;
+        }
+        return customValues[fieldKey]?.trim() || '';
+      };
+
+      const code = getValue('student_code');
+      const first = getValue('first_name');
+      const last = getValue('last_name');
+      const className = getValue('class_name');
+      const dept = getValue('department');
+      const level = getValue('level');
+      const schoolName = getValue('school_name');
 
       let isValid = true;
       let error = '';
@@ -455,6 +517,7 @@ class StudentService {
         class_name: className,
         department: dept,
         level,
+        school_name: schoolName,
         is_valid: isValid,
         error,
       };

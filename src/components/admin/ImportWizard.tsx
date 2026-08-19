@@ -27,6 +27,7 @@ export const ImportWizard: React.FC<Props> = ({ onClose, onSuccess }) => {
   const [headers, setHeaders] = useState<string[]>([]);
   const [rawRows, setRawRows] = useState<any[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
+  const [customValues, setCustomValues] = useState<Record<string, string>>({});
   const [previewRows, setPreviewRows] = useState<ImportPreviewRow[]>([]);
   const [validCount, setValidCount] = useState(0);
   const [errorCount, setErrorCount] = useState(0);
@@ -60,7 +61,7 @@ export const ImportWizard: React.FC<Props> = ({ onClose, onSuccess }) => {
   // STEP 4 & 5: Generate Preview and Validate
   const handleProceedToPreview = () => {
     soundManager.playClick();
-    const { preview, validCount: vCount, errorCount: eCount } = studentService.validateRows(rawRows, mapping);
+    const { preview, validCount: vCount, errorCount: eCount } = studentService.validateRows(rawRows, mapping, customValues);
     setPreviewRows(preview);
     setValidCount(vCount);
     setErrorCount(eCount);
@@ -179,33 +180,62 @@ export const ImportWizard: React.FC<Props> = ({ onClose, onSuccess }) => {
                 <p className="text-[11px] text-slate-400 font-mono">พบ {rawRows.length} รายการ และ {headers.length} คอลัมน์</p>
               </div>
 
-              <h4 className="font-bold text-white text-sm">จับคู่คอลัมน์ในไฟล์กับระบบ:</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-white text-sm">จับคู่คอลัมน์ในไฟล์ หรือกรอกข้อความที่ใช้ร่วมกันทุกคน:</h4>
+                <span className="text-[11px] text-amber-400 font-medium font-mono">💡 หากไฟล์ไม่มีคอลัมน์ สามารถพิมพ์ข้อความระบุตรงๆ ได้ทันที</span>
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
-                  { field: 'student_code', label: 'รหัสนักเรียน *', req: true },
-                  { field: 'first_name', label: 'ชื่อจริง *', req: true },
-                  { field: 'last_name', label: 'นามสกุล *', req: true },
-                  { field: 'class_name', label: 'ห้องเรียน / ชั้น', req: false },
-                  { field: 'department', label: 'แผนกวิชา / สาขา', req: false },
-                  { field: 'level', label: 'ระดับชั้น (ปวช./ปวส.)', req: false },
+                  { field: 'student_code', label: 'รหัสนักเรียน *', req: true, placeholder: 'เช่น 66209010001' },
+                  { field: 'first_name', label: 'ชื่อจริง *', req: true, placeholder: 'เช่น สมชาย' },
+                  { field: 'last_name', label: 'นามสกุล *', req: true, placeholder: 'เช่น สายวิทย์' },
+                  { field: 'class_name', label: 'ห้องเรียน / ชั้น', req: false, placeholder: 'เช่น ปวช.1/1' },
+                  { field: 'department', label: 'แผนกวิชา / สาขา', req: false, placeholder: 'เช่น เทคโนโลยีสารสนเทศ' },
+                  { field: 'level', label: 'ระดับชั้น (ปวช./ปวส.)', req: false, placeholder: 'เช่น ปวช.' },
+                  { field: 'school_name', label: 'ชื่อโรงเรียน / สถาบัน', req: false, placeholder: 'เช่น วิทยาลัยเทคโนโลยี...' },
                 ].map((item) => (
-                  <div key={item.field} className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-                    <label className="block text-slate-300 font-semibold">
-                      {item.label}
-                    </label>
+                  <div key={item.field} className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-slate-300 font-semibold text-xs">
+                        {item.label}
+                      </label>
+                      {mapping[item.field] && mapping[item.field] !== '__CUSTOM__' && (
+                        <span className="text-[10px] text-emerald-400 font-mono font-bold">✓ แมปคอลัมน์แล้ว</span>
+                      )}
+                    </div>
+
                     <select
                       value={mapping[item.field] || ''}
                       onChange={(e) => setMapping({ ...mapping, [item.field]: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white"
+                      className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs"
                     >
-                      <option value="">-- ไม่ได้ระบุ --</option>
+                      <option value="">-- ไม่ได้เลือกลักษณะคอลัมน์ --</option>
+                      <option value="__CUSTOM__">✏️ กรอกข้อความเอง (ระบุให้ทุกคนในไฟล์นี้)</option>
                       {headers.map((h) => (
                         <option key={h} value={h}>
-                          {h}
+                          คอลัมน์ในไฟล์: {h}
                         </option>
                       ))}
                     </select>
+
+                    {/* Custom text fallback input */}
+                    {(mapping[item.field] === '__CUSTOM__' || !mapping[item.field] || customValues[item.field]) && (
+                      <div className="mt-1 pt-2 border-t border-slate-800/80 space-y-1">
+                        <label className="block text-[10px] text-amber-300 font-medium">
+                          {mapping[item.field] === '__CUSTOM__'
+                            ? '📝 ข้อความกำหนดเอง (จะใส่ให้ทุกคนในไฟล์นี้):'
+                            : '💡 หรือระบุข้อความแทนกรณีไม่มีคอลัมน์นี้:'}
+                        </label>
+                        <input
+                          type="text"
+                          placeholder={item.placeholder}
+                          value={customValues[item.field] || ''}
+                          onChange={(e) => setCustomValues({ ...customValues, [item.field]: e.target.value })}
+                          className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs placeholder:text-slate-600 focus:border-mario-yellow focus:outline-none"
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

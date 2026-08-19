@@ -53,6 +53,39 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
     );
   });
 
+  const handleDeleteStudent = async (s: Student) => {
+    if (confirm(`คุณแน่ใจหรือไม่ที่จะลบรายชื่อนักเรียน "${s.full_name}" (รหัส: ${s.student_code})?`)) {
+      soundManager.playClick();
+      const res = await studentService.deleteStudent(s.id);
+      if (res.success) {
+        onRefresh();
+      } else {
+        alert(res.message);
+      }
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    if (students.length === 0) return;
+    soundManager.playError();
+    const confirmed = confirm(`⚠️ คำเตือน: คุณแน่ใจหรือไม่ที่จะลบรายชื่อนักเรียนทั้งหมดในระบบจำนวน ${students.length} คน?\n\nการดำเนินการนี้ไม่สามารถย้อนกลับได้!`);
+    if (!confirmed) return;
+
+    const userInput = prompt(`โปรดพิมพ์คำว่า "DELETE" เพื่อยืนยันการลบนักเรียนทั้งหมด ${students.length} คน:`);
+    if (userInput?.toUpperCase() === 'DELETE') {
+      soundManager.playClick();
+      const res = await studentService.deleteAllStudents();
+      if (res.success) {
+        alert('ลบรายชื่อนักเรียนทั้งหมดในระบบเรียบร้อยแล้ว');
+        onRefresh();
+      } else {
+        alert(res.message);
+      }
+    } else if (userInput !== null) {
+      alert('คำยืนยันไม่ถูกต้อง ไม่ได้ลบข้อมูล');
+    }
+  };
+
   const handleExport = (format: 'xlsx' | 'csv' | 'json') => {
     soundManager.playClick();
     exportService.exportStudents(format);
@@ -155,6 +188,18 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
             </button>
           </div>
 
+          {/* Delete All Students Button */}
+          <button
+            type="button"
+            onClick={handleDeleteAll}
+            disabled={students.length === 0}
+            className="px-3.5 py-2 rounded-xl bg-red-950/80 border border-red-600/80 text-red-300 hover:bg-red-900 hover:border-red-500 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-40"
+            title="ลบรายชื่อนักเรียนทั้งหมดในระบบ"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-red-400" />
+            <span>ลบนักเรียนทั้งหมด ({students.length})</span>
+          </button>
+
           {/* Import Wizard Button */}
           <button
             type="button"
@@ -189,13 +234,14 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
                 <th className="py-3.5 px-4">แผนก / สังกัด</th>
                 <th className="py-3.5 px-4">เบอร์โทร / QR Token</th>
                 <th className="py-3.5 px-4">สถานะ</th>
+                <th className="py-3.5 px-4 text-center">จัดการ</th>
               </tr>
             </thead>
 
             <tbody className="divide-y divide-slate-800/60 font-medium">
               {filteredStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-500">
+                  <td colSpan={7} className="py-8 text-center text-slate-500">
                     ไม่พบข้อมูลนักเรียน
                   </td>
                 </tr>
@@ -237,6 +283,16 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
                           ACTIVE
                         </span>
                       )}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteStudent(s)}
+                        className="p-1.5 rounded-lg bg-red-950/60 border border-red-800/60 text-red-400 hover:bg-red-900 hover:text-white transition-colors"
+                        title={`ลบรายชื่อ ${s.full_name}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </td>
                   </tr>
                 ))

@@ -165,6 +165,16 @@ export class MockStudentProvider implements StudentProvider {
     }
   }
 
+  public deleteStudent(studentId: string) {
+    this.students = this.students.filter((s) => s.id !== studentId);
+    this.save();
+  }
+
+  public clearAllStudents() {
+    this.students = [];
+    this.save();
+  }
+
   // Handle dynamic QR format e.g. "STU:66209010001:1710000000" or raw student code or external QR token
   async getStudentByQrToken(qrToken: string): Promise<StudentVerificationResult> {
     const now = Date.now();
