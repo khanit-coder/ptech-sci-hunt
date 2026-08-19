@@ -546,6 +546,9 @@ ALTER TABLE public.import_errors ENABLE ROW LEVEL SECURITY;
 
 -- 1. Profiles Policies
 DROP POLICY IF EXISTS "Public read profiles" ON public.profiles;
+DROP POLICY IF EXISTS "User or admin insert profile" ON public.profiles;
+DROP POLICY IF EXISTS "User or admin update profile" ON public.profiles;
+DROP POLICY IF EXISTS "Admin delete profile" ON public.profiles;
 DROP POLICY IF EXISTS "User or admin manage profiles" ON public.profiles;
 DROP POLICY IF EXISTS "Public access profiles" ON public.profiles;
 
@@ -563,6 +566,9 @@ CREATE POLICY "Admin delete profile" ON public.profiles
 
 -- 2. Item Types Policies
 DROP POLICY IF EXISTS "Public access item types" ON public.item_types;
+DROP POLICY IF EXISTS "Public read item types" ON public.item_types;
+DROP POLICY IF EXISTS "Admin manage item types" ON public.item_types;
+
 CREATE POLICY "Public read item types" ON public.item_types 
   FOR SELECT USING (true);
 
@@ -571,6 +577,9 @@ CREATE POLICY "Admin manage item types" ON public.item_types
 
 -- 3. Items Policies
 DROP POLICY IF EXISTS "Public access items" ON public.items;
+DROP POLICY IF EXISTS "Public read items" ON public.items;
+DROP POLICY IF EXISTS "Admin manage items" ON public.items;
+
 CREATE POLICY "Public read items" ON public.items 
   FOR SELECT USING (true);
 
@@ -579,6 +588,9 @@ CREATE POLICY "Admin manage items" ON public.items
 
 -- 4. Event Settings Policies
 DROP POLICY IF EXISTS "Public access event settings" ON public.event_settings;
+DROP POLICY IF EXISTS "Public read event settings" ON public.event_settings;
+DROP POLICY IF EXISTS "Admin manage event settings" ON public.event_settings;
+
 CREATE POLICY "Public read event settings" ON public.event_settings 
   FOR SELECT USING (true);
 
@@ -587,6 +599,9 @@ CREATE POLICY "Admin manage event settings" ON public.event_settings
 
 -- 5. Students Policies
 DROP POLICY IF EXISTS "Public access students" ON public.students;
+DROP POLICY IF EXISTS "Public read students" ON public.students;
+DROP POLICY IF EXISTS "Staff and admin manage students" ON public.students;
+
 CREATE POLICY "Public read students" ON public.students 
   FOR SELECT USING (true);
 
@@ -595,6 +610,11 @@ CREATE POLICY "Staff and admin manage students" ON public.students
 
 -- 6. Discoveries Policies
 DROP POLICY IF EXISTS "Public access discoveries" ON public.discoveries;
+DROP POLICY IF EXISTS "Public read discoveries" ON public.discoveries;
+DROP POLICY IF EXISTS "Staff and admin claim discoveries" ON public.discoveries;
+DROP POLICY IF EXISTS "Staff and admin update discoveries" ON public.discoveries;
+DROP POLICY IF EXISTS "Admin delete discoveries" ON public.discoveries;
+
 CREATE POLICY "Public read discoveries" ON public.discoveries 
   FOR SELECT USING (true);
 
@@ -609,6 +629,9 @@ CREATE POLICY "Admin delete discoveries" ON public.discoveries
 
 -- 7. Discovery Attempts Policies
 DROP POLICY IF EXISTS "Public access discovery attempts" ON public.discovery_attempts;
+DROP POLICY IF EXISTS "Staff and admin read attempts" ON public.discovery_attempts;
+DROP POLICY IF EXISTS "Insert discovery attempts" ON public.discovery_attempts;
+
 CREATE POLICY "Staff and admin read attempts" ON public.discovery_attempts 
   FOR SELECT USING (public.is_staff());
 
@@ -617,6 +640,9 @@ CREATE POLICY "Insert discovery attempts" ON public.discovery_attempts
 
 -- 8. Audit Logs Policies
 DROP POLICY IF EXISTS "Public access audit logs" ON public.audit_logs;
+DROP POLICY IF EXISTS "Admin read audit logs" ON public.audit_logs;
+DROP POLICY IF EXISTS "Insert audit logs" ON public.audit_logs;
+
 CREATE POLICY "Admin read audit logs" ON public.audit_logs 
   FOR SELECT USING (public.is_admin());
 
@@ -626,6 +652,8 @@ CREATE POLICY "Insert audit logs" ON public.audit_logs
 -- 9. Import Jobs & Errors Policies
 DROP POLICY IF EXISTS "Public access import jobs" ON public.import_jobs;
 DROP POLICY IF EXISTS "Public access import errors" ON public.import_errors;
+DROP POLICY IF EXISTS "Admin manage import jobs" ON public.import_jobs;
+DROP POLICY IF EXISTS "Admin manage import errors" ON public.import_errors;
 
 CREATE POLICY "Admin manage import jobs" ON public.import_jobs 
   FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
@@ -775,6 +803,12 @@ $$;
 -- 14. RLS POLICIES FOR BOOTHS AND BOOTH_CHECKINS
 ALTER TABLE public.booths ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.booth_checkins ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public read booths" ON public.booths;
+DROP POLICY IF EXISTS "Admin manage booths" ON public.booths;
+DROP POLICY IF EXISTS "Public read booth checkins" ON public.booth_checkins;
+DROP POLICY IF EXISTS "Staff insert booth checkins" ON public.booth_checkins;
+DROP POLICY IF EXISTS "Admin manage booth checkins" ON public.booth_checkins;
 
 -- Booths: anyone can read, only admin can write
 CREATE POLICY "Public read booths" ON public.booths
