@@ -54,9 +54,25 @@ export const Navbar: React.FC = () => {
     navigate('/login');
   };
 
-  // Hide standard navbar on pure LED mode for clean presentation
-  if (location.pathname === '/dashboard/led') {
-    return null;
+  // Hide standard navbar on pure LED mode & staff page for clean kiosk view
+  if (location.pathname === '/dashboard/led' || (location.pathname === '/staff' && profile?.role === 'staff')) {
+    return (
+      <div className="fixed top-3 right-3 z-50 flex items-center gap-2">
+        {profile && (
+          <div className="px-3 py-1.5 rounded-full bg-slate-950/90 border border-slate-800 text-slate-300 backdrop-blur-md shadow-xl text-xs flex items-center gap-2 font-mono">
+            <span className="text-mario-yellow font-bold">👤 {profile.display_name || profile.username}</span>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="p-1 rounded-lg bg-red-950/80 border border-red-700/80 text-red-400 hover:text-white hover:bg-red-900 transition-colors cursor-pointer"
+              title="ออกจากระบบ"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
+    );
   }
 
   return (

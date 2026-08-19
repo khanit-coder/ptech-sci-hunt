@@ -16,6 +16,9 @@ export const MobileBottomNav: React.FC = () => {
 
   if (location.pathname === '/dashboard/led') return null;
 
+  // Hide bottom navigation on mobile/iPad for staff accounts on /staff route
+  if (location.pathname === '/staff' && profile?.role === 'staff') return null;
+
   const isAdmin = profile?.role === 'admin';
   const isStaff = profile?.role === 'staff' || isAdmin;
 
