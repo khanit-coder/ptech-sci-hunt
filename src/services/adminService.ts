@@ -117,12 +117,17 @@ class AdminService {
       if (data) return data as Profile[];
     }
 
+    if (this.staffUsers.length > 0) {
+      return this.staffUsers;
+    }
+
     // Default mock list
-    return [
+    this.staffUsers = [
       {
         id: 'usr_admin',
+        username: 'admin',
         email: 'admin@ptech.ac.th',
-        full_name: 'อาจารย์ผู้ดูแลระบบ PTECH',
+        full_name: 'ผู้ดูแลระบบ (Admin)',
         display_name: 'Admin Commander',
         role: 'admin',
         is_active: true,
@@ -131,25 +136,111 @@ class AdminService {
       },
       {
         id: 'usr_staff_1',
-        email: 'staff1@ptech.ac.th',
-        full_name: 'นายพชร บุญส่ง (จุดตรวจโดม 1)',
-        display_name: 'Staff Dome A',
+        username: 'staff_scanner',
+        email: 'staff_scanner@ptech.ac.th',
+        full_name: 'staff_scanner (สแกนไอเท็ม)',
+        display_name: 'Staff - สแกนไอเท็ม',
         role: 'staff',
+        staff_duty: 'item_scanner',
         is_active: true,
         created_at: new Date(Date.now() - 43200000).toISOString(),
         updated_at: new Date().toISOString(),
       },
       {
         id: 'usr_staff_2',
-        email: 'staff2@ptech.ac.th',
-        full_name: 'นางสาวกัญญา พงษ์ศิริ (จุดตรวจอาคาร 3)',
-        display_name: 'Staff Building 3',
+        username: 'staff_booth1',
+        email: 'staff_booth1@ptech.ac.th',
+        full_name: 'staff_booth1 (บูทฟิสิกส์)',
+        display_name: 'Staff - บูทฟิสิกส์',
         role: 'staff',
+        staff_duty: 'booth_staff',
+        assigned_booth_name: 'บูทฟิสิกส์',
         is_active: true,
         created_at: new Date(Date.now() - 21600000).toISOString(),
         updated_at: new Date().toISOString(),
       },
     ];
+
+    return this.staffUsers;
+  }
+
+  async createStaffUser(payload: {
+    username: string;
+    password?: string;
+    role: UserRole;
+    staff_duty?: 'item_scanner' | 'booth_staff';
+    assigned_booth_id?: string;
+    assigned_booth_name?: string;
+  }): Promise<{ success: boolean; profile?: Profile; message: string }> {
+    const cleanUsername = payload.username.trim().toLowerCase();
+    const email = `${cleanUsername}@ptech.ac.th`;
+
+    let displayName = cleanUsername;
+    let fullName = cleanUsername;
+
+    if (payload.role === 'staff') {
+      if (payload.staff_duty === 'booth_staff' && payload.assigned_booth_name) {
+        displayName = `Staff - ${payload.assigned_booth_name}`;
+        fullName = `${cleanUsername} (${payload.assigned_booth_name})`;
+      } else {
+        displayName = `Staff - สแกนไอเท็ม`;
+        fullName = `${cleanUsername} (สแกนไอเท็ม)`;
+      }
+    } else {
+      displayName = `${payload.role.toUpperCase()} (${cleanUsername})`;
+      fullName = cleanUsername;
+    }
+
+    const generateUuid = () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : '00000000-0000-4000-8000-' + Math.random().toString(16).substring(2, 14).padStart(12, '0');
+
+    const newProfile: Profile = {
+      id: generateUuid(),
+      username: cleanUsername,
+      email,
+      full_name: fullName,
+      display_name: displayName,
+      role: payload.role,
+      staff_duty: payload.role === 'staff' ? payload.staff_duty || 'item_scanner' : undefined,
+      assigned_booth_id: payload.role === 'staff' && payload.staff_duty === 'booth_staff' ? payload.assigned_booth_id : undefined,
+      assigned_booth_name: payload.role === 'staff' && payload.staff_duty === 'booth_staff' ? payload.assigned_booth_name : undefined,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase.from('profiles').upsert(newProfile, { onConflict: 'email' }).select().single();
+        if (!error && data) {
+          return { success: true, profile: data as Profile, message: 'สร้างบัญชีสตาฟสำเร็จ!' };
+        }
+        if (error) return { success: false, message: error.message };
+      } catch (err: any) {
+        console.warn('Supabase createStaffUser error:', err);
+      }
+    }
+
+    // In-memory mock
+    this.staffUsers.unshift(newProfile);
+    return { success: true, profile: newProfile, message: 'สร้างบัญชีสตาฟสำเร็จ!' };
+  }
+
+  async deleteStaffUser(id: string): Promise<{ success: boolean; message: string }> {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('profiles').delete().eq('id', id);
+        if (!error) return { success: true, message: 'ลบบัญชีผู้ใช้สำเร็จ' };
+        return { success: false, message: error.message };
+      } catch (err: any) {
+        return { success: false, message: err.message };
+      }
+    }
+
+    this.staffUsers = this.staffUsers.filter((u) => u.id !== id);
+    return { success: true, message: 'ลบบัญชีผู้ใช้สำเร็จ' };
   }
 
   // Emergency controls

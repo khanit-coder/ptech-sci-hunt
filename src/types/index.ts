@@ -9,12 +9,18 @@ export type DiscoveryStatus = 'confirmed' | 'revoked' | 'correction_requested';
 export type VerificationMethod = 'external_qr' | 'student_id' | 'manual_name' | 'imported_student';
 export type StudentNameDisplayMode = 'full' | 'masked' | 'nickname' | 'hidden';
 
+export type StaffDutyType = 'item_scanner' | 'booth_staff';
+
 export interface Profile {
   id: string;
+  username?: string;
   email: string;
   full_name: string;
   display_name: string;
   role: UserRole;
+  staff_duty?: StaffDutyType;
+  assigned_booth_id?: string;
+  assigned_booth_name?: string;
   is_active: boolean;
   last_login_at?: string;
   created_at: string;
