@@ -6,8 +6,8 @@ import { isSupabaseConfigured } from '@/lib/supabase';
 export const Footer: React.FC = () => {
   const location = useLocation();
 
-  // Hide footer on LED presentation mode for 100% clean full screen without scrollbars
-  if (location.pathname === '/dashboard/led') {
+  // Hide footer on LED presentation mode & Staff page for clean display
+  if (location.pathname === '/dashboard/led' || location.pathname === '/staff') {
     return null;
   }
 
