@@ -244,42 +244,6 @@ export const StaffPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Quick Action: Register External Student Banner */}
-        <div className="p-3.5 sm:p-4 rounded-3xl bg-gradient-to-r from-slate-900 via-emerald-950/40 to-slate-900 border-2 border-emerald-500/40 shadow-xl flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-mario-green/20 border border-mario-green/40 flex items-center justify-center text-mario-green shrink-0 shadow-neon-green">
-              <UserPlus className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <h3 className="font-game text-[11px] sm:text-xs text-mario-yellow">
-                  ลงทะเบียนนักเรียนภายนอก
-                </h3>
-                {externalStudentsCount > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-700">
-                    {externalStudentsCount} คน
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-slate-300 hidden sm:block">
-                สแกน QR Code (สายรัดข้อมือ/บัตร) เพื่อลงทะเบียนร่วมกิจกรรม
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => {
-              soundManager.playClick();
-              setIsRegisterExtOpen(true);
-            }}
-            className="px-3.5 sm:px-4 py-2.5 rounded-xl bg-gradient-to-r from-mario-green to-emerald-500 text-slate-950 font-black text-xs shadow-neon-green hover:opacity-95 transition-all shrink-0 flex items-center gap-1.5 pixel-btn"
-          >
-            <QrCode className="w-3.5 h-3.5" />
-            <span>สแกนลงทะเบียน</span>
-          </button>
-        </div>
-
         {/* STEP 1: SCAN ITEM QR */}
         {activeStep === 'scan_item' && (
           <div className="space-y-4">
