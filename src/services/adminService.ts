@@ -236,29 +236,109 @@ class AdminService {
 
     if (isSupabaseConfigured && supabase) {
       try {
-        // Send only standard columns to Supabase profiles table to avoid schema cache error
-        const dbPayload = {
-          id: newProfile.id,
+        // 1. Check if profile with this email or username already exists
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('*')
+          .or(`email.eq.${email},username.eq.${cleanUsername}`)
+          .maybeSingle();
+
+        const targetId = existingProfile?.id || newProfile.id;
+
+        const dbPayload: any = {
+          id: targetId,
           email: newProfile.email,
+          username: cleanUsername,
           full_name: newProfile.full_name,
           display_name: newProfile.display_name,
           role: newProfile.role,
+          staff_duty: newProfile.staff_duty || null,
+          assigned_booth_id: newProfile.assigned_booth_id || null,
+          assigned_booth_name: newProfile.assigned_booth_name || null,
           is_active: newProfile.is_active,
-          created_at: newProfile.created_at,
-          updated_at: newProfile.updated_at,
+          created_at: existingProfile?.created_at || newProfile.created_at,
+          updated_at: new Date().toISOString(),
         };
 
-        const { data, error } = await supabase.from('profiles').upsert(dbPayload, { onConflict: 'email' }).select().single();
-        if (!error && data) {
-          return { success: true, profile: { ...newProfile, ...data } as Profile, message: 'สร้างบัญชีสตาฟสำเร็จ!' };
+        let resultData: any = null;
+        let resultError: any = null;
+
+        if (existingProfile) {
+          // Update existing account
+          const { data, error } = await supabase
+            .from('profiles')
+            .update(dbPayload)
+            .eq('id', existingProfile.id)
+            .select()
+            .single();
+          resultData = data;
+          resultError = error;
+        } else {
+          // Insert new account
+          const { data, error } = await supabase
+            .from('profiles')
+            .insert([dbPayload])
+            .select()
+            .single();
+
+          if (error && (error.code === '409' || error.code === '23505' || error.message?.includes('duplicate') || error.message?.includes('conflict'))) {
+            // Fallback: update existing row by email
+            const { data: fbData, error: fbError } = await supabase
+              .from('profiles')
+              .update(dbPayload)
+              .eq('email', email)
+              .select()
+              .single();
+            resultData = fbData;
+            resultError = fbError;
+          } else {
+            resultData = data;
+            resultError = error;
+          }
         }
-        if (error) return { success: false, message: error.message };
+
+        if (!resultError && resultData) {
+          // Update in-memory cache
+          this.staffUsers = this.staffUsers.filter((u) => u.email !== email && u.username !== cleanUsername);
+          const finalProfile = { ...newProfile, ...resultData } as Profile;
+          this.staffUsers.unshift(finalProfile);
+
+          return { success: true, profile: finalProfile, message: 'สร้าง/อัปเดตบัญชีสตาฟสำเร็จ!' };
+        }
+
+        if (resultError) {
+          console.warn('Supabase createStaffUser error:', resultError);
+          // If Supabase table schema missing columns, retry with basic payload
+          const basicPayload = {
+            id: targetId,
+            email: newProfile.email,
+            full_name: newProfile.full_name,
+            display_name: newProfile.display_name,
+            role: newProfile.role,
+            is_active: newProfile.is_active,
+            updated_at: new Date().toISOString(),
+          };
+          const { data: retryData, error: retryError } = await supabase
+            .from('profiles')
+            .upsert(basicPayload, { onConflict: 'email' })
+            .select()
+            .single();
+
+          if (!retryError && retryData) {
+            this.staffUsers = this.staffUsers.filter((u) => u.email !== email);
+            const finalProfile = { ...newProfile, ...retryData } as Profile;
+            this.staffUsers.unshift(finalProfile);
+            return { success: true, profile: finalProfile, message: 'สร้าง/อัปเดตบัญชีสตาฟสำเร็จ!' };
+          }
+          return { success: false, message: resultError.message || 'เกิดข้อผิดพลาดในการบันทึกบัญชีสตาฟ' };
+        }
       } catch (err: any) {
-        console.warn('Supabase createStaffUser error:', err);
+        console.warn('Supabase createStaffUser exception:', err);
       }
     }
 
     // In-memory mock
+    this.staffUsers = this.staffUsers.filter((u) => u.email !== email && u.username !== cleanUsername);
     this.staffUsers.unshift(newProfile);
     return { success: true, profile: newProfile, message: 'สร้างบัญชีสตาฟสำเร็จ!' };
   }

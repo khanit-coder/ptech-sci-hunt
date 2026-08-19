@@ -70,6 +70,9 @@ ALTER TABLE public.profiles
     ADD COLUMN IF NOT EXISTS assigned_booth_name TEXT,
     ADD COLUMN IF NOT EXISTS username TEXT;
 
+-- Remove FK constraint on profiles.id to support standalone admin & staff profiles
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_id_fkey;
+
 -- Table: item_types (Dynamic categories of items)
 CREATE TABLE IF NOT EXISTS public.item_types (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
