@@ -736,12 +736,21 @@ AS $$
 DECLARE
     v_booth RECORD;
     v_existing RECORD;
-    v_event_status TEXT;
+    v_event_status event_status;
+    v_booths_enabled BOOLEAN;
     v_new_id UUID;
 BEGIN
     -- 1. Check event status
-    SELECT status, booths_enabled INTO v_event_status, v_booth.is_active
+    SELECT status, booths_enabled INTO v_event_status, v_booths_enabled
     FROM public.event_settings WHERE id = 1;
+
+    IF v_event_status = 'paused' THEN
+        RETURN jsonb_build_object('success', false, 'code', 'EVENT_PAUSED', 'message', 'ขณะนี้กิจกรรมหยุดชั่วคราวโดยผู้ดูแลระบบ');
+    ELSIF v_event_status = 'closed' THEN
+        RETURN jsonb_build_object('success', false, 'code', 'EVENT_CLOSED', 'message', 'กิจกรรมสิ้นสุดลงแล้ว');
+    ELSIF NOT COALESCE(v_booths_enabled, true) THEN
+        RETURN jsonb_build_object('success', false, 'code', 'BOOTHS_DISABLED', 'message', 'ระบบเช็คอินบูทปิดอยู่ขณะนี้');
+    END IF;
 
     -- 2. Fetch booth
     SELECT * INTO v_booth FROM public.booths WHERE id = p_booth_id AND is_active = true FOR UPDATE;

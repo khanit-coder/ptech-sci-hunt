@@ -172,13 +172,82 @@ class BoothService {
 
   private async doCheckin(boothId: string, student: Student, staffId?: string): Promise<BoothCheckinResult> {
     if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase.rpc('booth_checkin_atomic', {
-        p_booth_id: boothId,
-        p_student_id: student.id,
-        p_staff_id: staffId || null,
-      });
-      if (error) return { success: false, code: 'DATABASE_ERROR', message: error.message };
-      return { ...(data as BoothCheckinResult), student };
+      try {
+        const { data, error } = await supabase.rpc('booth_checkin_atomic', {
+          p_booth_id: boothId,
+          p_student_id: student.id,
+          p_staff_id: staffId || null,
+        });
+
+        if (!error && data) {
+          return { ...(data as BoothCheckinResult), student };
+        }
+
+        // Direct table fallback if RPC fails or throws exception
+        if (error) {
+          console.warn('RPC booth_checkin_atomic error, using direct table fallback:', error);
+          const { data: booth } = await supabase.from('booths').select('*').eq('id', boothId).single();
+          if (!booth) return { success: false, code: 'BOOTH_NOT_FOUND', message: 'ไม่พบบูทนี้ในระบบ' };
+
+          const { data: existing } = await supabase
+            .from('booth_checkins')
+            .select('*')
+            .eq('booth_id', boothId)
+            .eq('student_id', student.id)
+            .maybeSingle();
+
+          if (existing) {
+            return {
+              success: false,
+              code: 'ALREADY_CHECKEDIN',
+              message: 'นักเรียนเช็คอินบูทนี้แล้ว!',
+              letter: booth.letter,
+              booth_name: booth.name,
+              checked_in_at: existing.checked_in_at,
+              student,
+            };
+          }
+
+          const { data: newCi, error: insertErr } = await supabase
+            .from('booth_checkins')
+            .insert({
+              booth_id: boothId,
+              student_id: student.id,
+              staff_id: staffId || null,
+              letter_awarded: booth.letter,
+            })
+            .select()
+            .single();
+
+          if (!insertErr && newCi) {
+            return {
+              success: true,
+              code: 'CHECKIN_SUCCESS',
+              message: `เช็คอินสำเร็จ! ได้รับตัวอักษร ${booth.letter}`,
+              letter: booth.letter,
+              letter_position: booth.letter_position,
+              booth_name: booth.name,
+              checkin_id: newCi.id,
+              student,
+            };
+          }
+
+          if (insertErr?.code === '23505') {
+            return {
+              success: false,
+              code: 'ALREADY_CHECKEDIN',
+              message: 'นักเรียนเช็คอินบูทนี้แล้ว!',
+              letter: booth.letter,
+              booth_name: booth.name,
+              student,
+            };
+          }
+
+          return { success: false, code: 'DATABASE_ERROR', message: error.message };
+        }
+      } catch (err: any) {
+        console.error('doCheckin exception:', err);
+      }
     }
 
     // Mock mode
