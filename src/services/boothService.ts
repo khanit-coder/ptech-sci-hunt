@@ -60,9 +60,10 @@ class BoothService {
 
   async updateBoothAssignments(updates: { id: string; letter: string; letter_position: number; sort_order?: number }[]): Promise<{ success: boolean; message: string }> {
     if (isSupabaseConfigured && supabase) {
+      const client = supabase;
       try {
         const promises = updates.map((u) =>
-          supabase
+          client
             .from('booths')
             .update({
               letter: u.letter,
