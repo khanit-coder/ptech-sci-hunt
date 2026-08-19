@@ -365,7 +365,7 @@ export const ImportWizard: React.FC<Props> = ({ onClose, onSuccess }) => {
           {step === 3 && (
             <button
               type="button"
-              disabled={!mapping.student_code || !mapping.first_name}
+              disabled={(!mapping.first_name && !customValues.first_name)}
               onClick={handleProceedToPreview}
               className="px-6 py-2.5 rounded-xl bg-mario-orange text-white text-xs font-bold shadow flex items-center gap-1.5 disabled:opacity-50 pixel-btn"
             >
