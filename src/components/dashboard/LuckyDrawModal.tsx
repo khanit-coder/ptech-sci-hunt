@@ -232,24 +232,26 @@ export const LuckyDrawModal: React.FC<Props> = ({ isOpen, onClose }) => {
       <div className="max-w-5xl lg:max-w-6xl w-full bg-slate-950 border-4 border-mario-yellow rounded-3xl p-6 sm:p-10 space-y-6 shadow-[0_0_100px_rgba(249,200,14,0.5)] relative overflow-hidden max-h-[96vh] overflow-y-auto">
         
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-          <div className="flex items-center gap-3.5">
-            <div className="w-14 h-14 rounded-2xl bg-mario-yellow/20 border-2 border-mario-yellow/70 flex items-center justify-center shadow-neon-yellow shrink-0">
-              <Trophy className="w-8 h-8 text-mario-yellow" />
+        <div className="flex items-center justify-between pb-4 border-b border-slate-800 gap-3">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-mario-yellow/20 border-2 border-mario-yellow/70 flex items-center justify-center shadow-neon-yellow shrink-0">
+              <Trophy className="w-7 h-7 sm:w-8 sm:h-8 text-mario-yellow" />
             </div>
-            <div>
-              <h3 className="font-game text-lg sm:text-2xl text-mario-yellow tracking-wider">🎰 LUCKY DRAW GRAND PRIZE</h3>
-              <p className="text-xs sm:text-base text-slate-300">
+            <div className="min-w-0">
+              <h3 className="font-game text-sm sm:text-lg lg:text-xl text-mario-yellow tracking-wider truncate">
+                🎰 LUCKY DRAW GRAND PRIZE
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-300 truncate">
                 สุ่มผู้โชคดีรางวัลใหญ่ประจำกิจกรรม PTECH-Sci
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 font-mono text-xs text-slate-300 bg-slate-900 px-3.5 py-2 rounded-2xl border border-slate-800">
-              <Users className="w-4 h-4 text-mario-orange" />
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-2 font-mono text-xs text-slate-300 bg-slate-900 px-3.5 py-2 rounded-2xl border border-slate-800 whitespace-nowrap">
+              <Users className="w-4 h-4 text-mario-orange shrink-0" />
               <span>ผู้มีสิทธิ์: <strong className="text-mario-yellow font-black text-sm">{candidates.length} คน</strong></span>
-              <span className="text-emerald-400 font-bold ml-1">(ครบ 100%: {full100Count} คน)</span>
+              <span className="text-emerald-400 font-bold ml-1 hidden sm:inline whitespace-nowrap">(ครบ 100%: {full100Count} คน)</span>
             </div>
 
             <button
@@ -264,7 +266,7 @@ export const LuckyDrawModal: React.FC<Props> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Ticker / Rolling Display Screen (GIANT STAGE VIEW) */}
-        <div className="relative p-8 sm:p-14 rounded-3xl bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-4 border-mario-yellow/80 text-center shadow-[inset_0_0_80px_rgba(249,200,14,0.2)] overflow-hidden min-h-[340px] sm:min-h-[420px] flex flex-col items-center justify-center">
+        <div className="relative p-6 sm:p-12 rounded-3xl bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-4 border-mario-yellow/80 text-center shadow-[inset_0_0_80px_rgba(249,200,14,0.2)] overflow-hidden min-h-[360px] sm:min-h-[440px] flex flex-col items-center justify-center">
           
           {/* Animated Cyber Grid */}
           <div className="absolute inset-0 bg-[radial-gradient(#f9c80e_2px,transparent_2px)] [background-size:24px_24px] opacity-20 pointer-events-none" />
@@ -287,10 +289,10 @@ export const LuckyDrawModal: React.FC<Props> = ({ isOpen, onClose }) => {
                   <span className="inline-block px-6 py-2 rounded-full bg-mario-orange/30 text-mario-yellow font-mono text-sm sm:text-base font-black uppercase tracking-widest border-2 border-mario-orange/60 shadow-neon-orange">
                     🎲 SEARCHING LUCKY WINNER...
                   </span>
-                  <h2 className="font-black text-4xl sm:text-6xl lg:text-7xl text-mario-yellow font-mono tracking-tight truncate max-w-full px-2 drop-shadow-[0_0_30px_rgba(249,200,14,0.8)]">
+                  <h2 className="font-black text-5xl sm:text-7xl lg:text-8xl text-mario-yellow font-mono tracking-tight truncate max-w-full px-2 drop-shadow-[0_0_40px_rgba(249,200,14,0.9)]">
                     {rollingCandidate.student.full_name}
                   </h2>
-                  <p className="text-xl sm:text-3xl text-white font-mono font-black">
+                  <p className="text-2xl sm:text-4xl text-white font-mono font-black">
                     รหัส: {rollingCandidate.student.student_code}
                   </p>
                 </div>
@@ -301,22 +303,24 @@ export const LuckyDrawModal: React.FC<Props> = ({ isOpen, onClose }) => {
                     🎉 LUCKY WINNER FOUND! 🎉
                   </div>
 
-                  <div className="space-y-3">
-                    <h2 className="font-black text-5xl sm:text-7xl lg:text-8xl text-mario-yellow tracking-tight drop-shadow-[0_0_50px_rgba(249,200,14,0.9)] leading-none px-2">
+                  <div className="space-y-4">
+                    {/* Super Giant Winner Name */}
+                    <h2 className="font-black text-6xl sm:text-8xl lg:text-[110px] text-mario-yellow tracking-tight drop-shadow-[0_0_60px_rgba(249,200,14,1)] leading-tight px-2 py-1">
                       {winner.student.full_name}
                     </h2>
 
-                    <div className="text-2xl sm:text-4xl text-white font-mono font-black tracking-wide flex items-center justify-center gap-3 flex-wrap pt-2">
+                    {/* Giant Student Code & Class */}
+                    <div className="text-3xl sm:text-5xl lg:text-6xl text-white font-mono font-black tracking-wide flex items-center justify-center gap-3 sm:gap-5 flex-wrap pt-1">
                       <span>รหัส: <strong className="text-mario-yellow underline">{winner.student.student_code}</strong></span>
                       {winner.student.class_name && (
-                        <span className="px-3 py-1 rounded-2xl bg-slate-900 border border-slate-700 text-slate-200">
+                        <span className="px-4 py-1.5 rounded-2xl bg-slate-900 border-2 border-slate-700 text-slate-200">
                           {winner.student.class_name}
                         </span>
                       )}
                     </div>
 
                     {winner.student.department && (
-                      <p className="text-lg sm:text-2xl text-emerald-300 font-bold tracking-wide">
+                      <p className="text-xl sm:text-3xl text-emerald-300 font-extrabold tracking-wide">
                         {winner.student.department}
                       </p>
                     )}
