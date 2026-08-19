@@ -187,7 +187,7 @@ export const ImportWizard: React.FC<Props> = ({ onClose, onSuccess }) => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
-                  { field: 'student_code', label: 'รหัสนักเรียน *', req: true, placeholder: 'เช่น 66209010001' },
+                  { field: 'student_code', label: 'รหัสนักเรียน (เว้นว่างได้ถ้านักเรียนภายนอก)', req: false, placeholder: 'เช่น 66209010001 (เว้นว่างได้ถ้านักเรียนภายนอก)' },
                   { field: 'first_name', label: 'ชื่อจริง *', req: true, placeholder: 'เช่น สมชาย' },
                   { field: 'last_name', label: 'นามสกุล *', req: true, placeholder: 'เช่น สายวิทย์' },
                   { field: 'class_name', label: 'ห้องเรียน / ชั้น', req: false, placeholder: 'เช่น ปวช.1/1' },

@@ -481,7 +481,7 @@ class StudentService {
         return customValues[fieldKey]?.trim() || '';
       };
 
-      const code = getValue('student_code');
+      let code = getValue('student_code');
       const first = getValue('first_name');
       const last = getValue('last_name');
       const className = getValue('class_name');
@@ -492,10 +492,14 @@ class StudentService {
       let isValid = true;
       let error = '';
 
+      // If student_code is empty (e.g. external student import), auto-generate EXT-code!
       if (!code) {
-        isValid = false;
-        error = 'ไม่มีรหัสนักเรียน';
-      } else if (!first) {
+        const shortRand = Math.random().toString(36).substring(2, 6).toUpperCase();
+        const padIdx = String(idx + 1).padStart(3, '0');
+        code = `EXT-${padIdx}${shortRand}`;
+      }
+
+      if (!first) {
         isValid = false;
         error = 'ไม่มีชื่อ';
       } else if (seenCodes.has(code)) {
@@ -535,20 +539,23 @@ class StudentService {
         ? crypto.randomUUID()
         : '00000000-0000-4000-8000-' + Math.random().toString(16).substring(2, 14).padStart(12, '0');
 
-    const newStudents: Student[] = validRows.map((r) => ({
-      id: generateUuid(),
-      student_code: r.student_code,
-
-      first_name: r.first_name,
-      last_name: r.last_name,
-      full_name: `${r.first_name} ${r.last_name}`,
-      class_name: r.class_name,
-      department: r.department,
-      level: r.level,
-      student_status: 'active',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }));
+    const newStudents: Student[] = validRows.map((r) => {
+      const isExternal = r.student_code.startsWith('EXT-') || Boolean(r.school_name);
+      return {
+        id: generateUuid(),
+        student_code: r.student_code,
+        first_name: r.first_name,
+        last_name: r.last_name,
+        full_name: `${r.first_name} ${r.last_name}`.trim(),
+        class_name: r.class_name || (isExternal ? 'นักเรียนภายนอก' : undefined),
+        department: r.department || (isExternal ? 'ภายนอก' : undefined),
+        level: r.level || (isExternal ? 'ภายนอก' : undefined),
+        school_name: r.school_name || (isExternal ? 'ภายนอก (External)' : undefined),
+        student_status: isExternal ? 'external' : 'active',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+    });
 
     if (isSupabaseConfigured && supabase) {
       const dbPayload = newStudents.map(({ full_name, school_name, phone, nickname, qr_token, notes, ...dbRow }) => ({
