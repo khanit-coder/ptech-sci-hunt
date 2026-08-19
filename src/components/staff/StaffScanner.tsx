@@ -168,38 +168,9 @@ export const StaffScanner: React.FC<Props> = ({
       if (cameraConfig?.deviceId) {
         cameraConstraint = { deviceId: { exact: cameraConfig.deviceId } };
       } else {
-        // Enumerate camera devices first to pick exact back/front camera ID (avoids NotReadableError on mobile)
-        try {
-          const devs = await Html5Qrcode.getCameras();
-          if (devs && devs.length > 0) {
-            setCameras(devs);
-            const targetFacing = cameraConfig?.facing || facingMode;
-            const matched = devs.find((d, idx) => {
-              const lbl = (d.label || '').toLowerCase();
-              if (targetFacing === 'environment') {
-                return (
-                  lbl.includes('back') ||
-                  lbl.includes('rear') ||
-                  lbl.includes('environment') ||
-                  lbl.includes('0') ||
-                  (devs.length > 1 && idx === devs.length - 1)
-                );
-              } else {
-                return lbl.includes('front') || lbl.includes('user') || lbl.includes('selfie') || idx === 0;
-              }
-            }) || devs[0];
-
-            if (matched) {
-              cameraConstraint = { deviceId: { exact: matched.id } };
-            }
-          }
-        } catch {
-          // ignore camera enum errors
-        }
-      }
-
-      if (!cameraConstraint) {
-        cameraConstraint = { facingMode: cameraConfig?.facing || facingMode };
+        // Use native facingMode constraint (browser natively opens back camera on initial start)
+        const targetFacing = cameraConfig?.facing || facingMode;
+        cameraConstraint = { facingMode: targetFacing };
       }
 
       await scanner.start(
@@ -222,6 +193,16 @@ export const StaffScanner: React.FC<Props> = ({
       );
 
       setCameraActive(true);
+
+      // Populate available camera devices list for camera switcher
+      try {
+        const devs = await Html5Qrcode.getCameras();
+        if (devs && devs.length > 0) {
+          setCameras(devs);
+        }
+      } catch {
+        // ignore
+      }
 
       // Check torch capability
       try {
