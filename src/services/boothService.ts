@@ -48,7 +48,35 @@ class BoothService {
 
   async updateBooth(id: string, updates: Partial<Omit<Booth, 'id' | 'created_at'>>): Promise<{ success: boolean; message: string }> {
     if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase
+      const client = supabase;
+      if (updates.letter_position !== undefined) {
+        // Find existing booth that occupies this letter_position
+        const { data: conflictBooth } = await client
+          .from('booths')
+          .select('id, letter_position')
+          .eq('letter_position', updates.letter_position)
+          .neq('id', id)
+          .maybeSingle();
+
+        if (conflictBooth) {
+          // Temporarily set conflict booth to negative position to avoid UNIQUE constraint violation (409 Conflict)
+          await client.from('booths').update({ letter_position: -9999 }).eq('id', conflictBooth.id);
+
+          // Fetch current booth's old position
+          const { data: currentBooth } = await client.from('booths').select('letter_position').eq('id', id).single();
+          const oldPos = currentBooth?.letter_position ?? -9998;
+
+          // Perform target update
+          const { error } = await client.from('booths').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
+          if (error) return { success: false, message: error.message };
+
+          // Move conflicting booth into current booth's old position
+          await client.from('booths').update({ letter_position: oldPos }).eq('id', conflictBooth.id);
+          return { success: true, message: 'อัปเดตบูทสำเร็จ' };
+        }
+      }
+
+      const { error } = await client
         .from('booths')
         .update({ ...updates, updated_at: new Date().toISOString() })
         .eq('id', id);
@@ -62,7 +90,20 @@ class BoothService {
     if (isSupabaseConfigured && supabase) {
       const client = supabase;
       try {
-        const promises = updates.map((u) =>
+        // Pass 1: Assign temporary unique negative positions to all target booths to clear UNIQUE constraint conflicts (409 Conflict)
+        const tempPromises = updates.map((u, i) =>
+          client
+            .from('booths')
+            .update({
+              letter_position: -1000 - i,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', u.id)
+        );
+        await Promise.all(tempPromises);
+
+        // Pass 2: Assign final target letter, letter_position, and sort_order
+        const finalPromises = updates.map((u) =>
           client
             .from('booths')
             .update({
@@ -73,7 +114,8 @@ class BoothService {
             })
             .eq('id', u.id)
         );
-        await Promise.all(promises);
+        await Promise.all(finalPromises);
+
         return { success: true, message: 'อัปเดตการจัดวางตัวอักษรบูทสำเร็จ' };
       } catch (err: any) {
         return { success: false, message: err.message || 'เกิดข้อผิดพลาดในการบันทึก' };
