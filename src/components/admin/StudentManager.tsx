@@ -6,6 +6,7 @@ import { soundManager } from '@/lib/sound';
 import { ExternalStudentRegisterModal } from '@/components/staff/ExternalStudentRegisterModal';
 import { StudentQRSheet } from '@/components/admin/StudentQRSheet';
 import { CardPrintDesigner } from '@/components/admin/CardPrintDesigner';
+import { CardStudentSelectorModal } from '@/components/admin/CardStudentSelectorModal';
 import { 
   Users, 
   Search, 
@@ -49,7 +50,9 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
   const [isAdding, setIsAdding] = useState(false);
   const [isRegisterExtOpen, setIsRegisterExtOpen] = useState(false);
   const [qrSheetTarget, setQrSheetTarget] = useState<'internal' | 'external' | null>(null);
+  const [isStudentSelectorOpen, setIsStudentSelectorOpen] = useState(false);
   const [isCardDesignerOpen, setIsCardDesignerOpen] = useState(false);
+  const [designerStudents, setDesignerStudents] = useState<Student[]>([]);
 
   // Form states for single student addition
   const [formCode, setFormCode] = useState('');
@@ -391,13 +394,13 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
           {/* Card Print Designer Button */}
           <button
             type="button"
-            onClick={() => { soundManager.playClick(); setIsCardDesignerOpen(true); }}
-            disabled={sortedStudents.length === 0}
+            onClick={() => { soundManager.playClick(); setIsStudentSelectorOpen(true); }}
+            disabled={students.length === 0}
             className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-violet-700 to-purple-700 border border-violet-500/60 text-white hover:from-violet-600 hover:to-purple-600 text-xs font-bold shadow-md transition-all flex items-center gap-1.5 disabled:opacity-40"
-            title={`ออกแบบการ์ดและปริ้น QR Code (${sortedStudents.length} คน)`}
+            title="ออกแบบการ์ดและปริ้น QR Code นักเรียน"
           >
             <span>🎨</span>
-            <span>Card Designer ({sortedStudents.length})</span>
+            <span>Card Designer</span>
           </button>
 
           {/* Import Wizard Button */}
@@ -746,10 +749,24 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
         />
       )}
 
-      {/* Card Print Designer Modal */}
+      {/* Step 1: Student Selection Modal */}
+      {isStudentSelectorOpen && (
+        <CardStudentSelectorModal
+          isOpen={isStudentSelectorOpen}
+          students={students}
+          onClose={() => setIsStudentSelectorOpen(false)}
+          onConfirm={(selected) => {
+            setDesignerStudents(selected);
+            setIsStudentSelectorOpen(false);
+            setIsCardDesignerOpen(true);
+          }}
+        />
+      )}
+
+      {/* Step 2: Card Print Designer Modal */}
       {isCardDesignerOpen && (
         <CardPrintDesigner
-          students={sortedStudents}
+          students={designerStudents.length > 0 ? designerStudents : sortedStudents}
           onClose={() => setIsCardDesignerOpen(false)}
         />
       )}
