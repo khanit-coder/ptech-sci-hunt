@@ -220,6 +220,15 @@ CREATE TABLE IF NOT EXISTS public.import_errors (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Table: card_templates (Saved card print designer templates)
+CREATE TABLE IF NOT EXISTS public.card_templates (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL,
+    config JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- 4. DATABASE INDEXES FOR 500 CONCURRENT USERS
 CREATE INDEX IF NOT EXISTS idx_items_qr_token ON public.items(qr_token);
 CREATE INDEX IF NOT EXISTS idx_items_type ON public.items(item_type_id);

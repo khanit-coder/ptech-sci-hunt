@@ -3,10 +3,11 @@ import { createPortal } from "react-dom";
 import { Student } from "@/types";
 import { QRCodeSVG } from "qrcode.react";
 import { soundManager } from "@/lib/sound";
+import { cardTemplateService, CardTemplateItem } from "@/services/cardTemplateService";
 import { 
   X, Eye, EyeOff, Printer, RefreshCw, ChevronLeft, ChevronRight, 
   Save, FolderOpen, Trash2, CheckSquare, Square, Search, Filter,
-  Layers, Check
+  Cloud, CloudCheck, Loader2
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -28,13 +29,6 @@ interface CardCfg {
   dblSided: boolean;
 }
 
-interface CardTemplate {
-  id: string;
-  name: string;
-  createdAt: string;
-  cfg: CardCfg;
-}
-
 const PAPER_MM: Record<PaperSz, Record<Orient, { w: number; h: number }>> = {
   A4: { portrait: { w: 210, h: 297 }, landscape: { w: 297, h: 210 } },
   A5: { portrait: { w: 148, h: 210 }, landscape: { w: 210, h: 148 } },
@@ -52,28 +46,26 @@ const INIT: CardCfg = {
   dblSided: false,
 };
 
-const PRESET_TEMPLATES: CardTemplate[] = [
+const PRESET_TEMPLATES: CardTemplateItem[] = [
   {
     id: "preset-a4-2x2",
     name: "Standard A4 (2×2 = 4 การ์ด)",
-    createdAt: new Date().toISOString(),
-    cfg: { ...INIT, paper: "A4", cols: 2, rows: 2 }
+    created_at: new Date().toISOString(),
+    config: { ...INIT, paper: "A4", cols: 2, rows: 2 }
   },
   {
     id: "preset-a4-3x3",
     name: "Compact A4 (3×3 = 9 การ์ด)",
-    createdAt: new Date().toISOString(),
-    cfg: { ...INIT, paper: "A4", cols: 3, rows: 3, qrSzPct: 35, nFpt: 8, cdFpt: 6, clFpt: 6 }
+    created_at: new Date().toISOString(),
+    config: { ...INIT, paper: "A4", cols: 3, rows: 3, qrSzPct: 35, nFpt: 8, cdFpt: 6, clFpt: 6 }
   },
   {
     id: "preset-a6-single",
     name: "Single Card A6 (1×1)",
-    createdAt: new Date().toISOString(),
-    cfg: { ...INIT, paper: "A6", cols: 1, rows: 1, qrSzPct: 45, nFpt: 14, cdFpt: 10, clFpt: 10 }
+    created_at: new Date().toISOString(),
+    config: { ...INIT, paper: "A6", cols: 1, rows: 1, qrSzPct: 45, nFpt: 14, cdFpt: 10, clFpt: 10 }
   }
 ];
-
-const LOCAL_STORAGE_KEY = "ptech_card_print_templates_v1";
 
 interface Props { students: Student[]; onClose: () => void; }
 
@@ -104,15 +96,10 @@ export const CardPrintDesigner: React.FC<Props> = ({ students, onClose }) => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set(students.map(s => s.id)));
 
-  // Saved templates state
-  const [savedTemplates, setSavedTemplates] = useState<CardTemplate[]>(() => {
-    try {
-      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  // Online Templates state
+  const [savedTemplates, setSavedTemplates] = useState<CardTemplateItem[]>([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const [showSaveModal, setShowSaveModal] = useState(false);
 
@@ -121,6 +108,18 @@ export const CardPrintDesigner: React.FC<Props> = ({ students, onClose }) => {
   const backRef   = useRef<HTMLInputElement>(null);
 
   const upd = (p: Partial<CardCfg>) => setCfg(prev => ({ ...prev, ...p }));
+
+  // Load online templates on mount
+  useEffect(() => {
+    let isMounted = true;
+    cardTemplateService.getTemplates().then(templates => {
+      if (isMounted) {
+        setSavedTemplates(templates);
+        setIsLoadingTemplates(false);
+      }
+    });
+    return () => { isMounted = false; };
+  }, []);
 
   // Extract unique class list for filter dropdown
   const classList = useMemo(() => {
@@ -348,40 +347,31 @@ export const CardPrintDesigner: React.FC<Props> = ({ students, onClose }) => {
     pages.push(printableStudents.slice(i, i + perPage));
   }
 
-  // ── Save & Load Templates ──────────────────────────────────────────────────
-  const handleSaveTemplate = () => {
+  // ── Online Save & Delete Handlers ──────────────────────────────────────────
+  const handleSaveTemplate = async () => {
     if (!templateName.trim()) return;
-    const newTpl: CardTemplate = {
-      id: "tpl-" + Date.now(),
-      name: templateName.trim(),
-      createdAt: new Date().toISOString(),
-      cfg: { ...cfg }
-    };
-    const next = [newTpl, ...savedTemplates];
-    setSavedTemplates(next);
+    setIsSaving(true);
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(next));
+      const savedItem = await cardTemplateService.saveTemplate(templateName.trim(), cfg);
+      setSavedTemplates(prev => [savedItem, ...prev.filter(p => p.id !== savedItem.id)]);
+      soundManager.playClick();
     } catch (err) {
-      console.error("Failed to save template to localStorage", err);
+      console.error('Failed to save template online:', err);
+    } finally {
+      setIsSaving(false);
+      setTemplateName("");
+      setShowSaveModal(false);
     }
-    setTemplateName("");
-    setShowSaveModal(false);
+  };
+
+  const handleLoadTemplate = (tpl: CardTemplateItem) => {
+    if (tpl.config) upd(tpl.config);
     soundManager.playClick();
   };
 
-  const handleLoadTemplate = (tpl: CardTemplate) => {
-    upd(tpl.cfg);
-    soundManager.playClick();
-  };
-
-  const handleDeleteTemplate = (id: string) => {
-    const next = savedTemplates.filter(t => t.id !== id);
-    setSavedTemplates(next);
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(next));
-    } catch (err) {
-      console.error(err);
-    }
+  const handleDeleteTemplate = async (id: string) => {
+    setSavedTemplates(prev => prev.filter(t => t.id !== id));
+    await cardTemplateService.deleteTemplate(id);
     soundManager.playClick();
   };
 
@@ -554,10 +544,10 @@ export const CardPrintDesigner: React.FC<Props> = ({ students, onClose }) => {
         <div style={{ position: "fixed", inset: 0, zIndex: 99999, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
           <div style={{ background: "#0f172a", border: "1px solid #334155", borderRadius: "16px", padding: "20px", width: "100%", maxWidth: "380px", color: "white" }}>
             <h3 style={{ fontSize: "15px", fontWeight: 800, marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
-              <Save size={16} className="text-orange-500" /> บันทึกเท็มเพลตการ์ด
+              <Cloud className="text-sky-400" size={16} /> บันทึกเท็มเพลตออนไลน์ (Supabase)
             </h3>
             <p style={{ fontSize: "12px", color: "#94a3b8", marginBottom: "12px" }}>
-              ตั้งชื่อเท็มเพลตนี้เพื่อเรียกใช้งานภายหลัง (รวมรูปพื้นหลังและตำแหน่งตำแหน่งที่จัดไว้)
+              ตั้งชื่อเท็มเพลตเพื่อบันทึกออนไลน์ลงฐานข้อมูล (สามารถเรียกใช้จากทุกเครื่องได้ทันที)
             </p>
             <input
               type="text"
@@ -569,7 +559,20 @@ export const CardPrintDesigner: React.FC<Props> = ({ students, onClose }) => {
             />
             <div style={{ display: "flex", justifyContent: "end", gap: "8px" }}>
               <button onClick={() => setShowSaveModal(false)} style={{ background: "#334155", color: "white", border: "none", borderRadius: "8px", padding: "8px 14px", fontSize: "12px", cursor: "pointer" }}>ยกเลิก</button>
-              <button onClick={handleSaveTemplate} disabled={!templateName.trim()} style={{ background: "#f97316", color: "white", border: "none", borderRadius: "8px", padding: "8px 16px", fontSize: "12px", fontWeight: 700, cursor: "pointer", opacity: templateName.trim() ? 1 : 0.4 }}>บันทึก</button>
+              <button
+                onClick={handleSaveTemplate}
+                disabled={!templateName.trim() || isSaving}
+                style={{
+                  background: "linear-gradient(135deg,#0284c7,#0369a1)", color: "white",
+                  border: "none", borderRadius: "8px", padding: "8px 16px",
+                  fontSize: "12px", fontWeight: 700, cursor: templateName.trim() ? "pointer" : "not-allowed",
+                  opacity: templateName.trim() && !isSaving ? 1 : 0.4,
+                  display: "flex", alignItems: "center", gap: "6px"
+                }}
+              >
+                {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Cloud size={13} />}
+                {isSaving ? "กำลังบันทึก..." : "บันทึกออนไลน์"}
+              </button>
             </div>
           </div>
         </div>
@@ -603,10 +606,10 @@ export const CardPrintDesigner: React.FC<Props> = ({ students, onClose }) => {
           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
             <button
               onClick={() => setShowSaveModal(true)}
-              style={{ background: "#1e293b", color: "#fb923c", border: "1px solid #7c2d12", borderRadius: "8px", padding: "7px 12px", fontSize: "12px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
-              title="บันทึกเลย์เอาต์นี้ไว้เป็นเท็มเพลต"
+              style={{ background: "#0369a1", color: "white", border: "1px solid #0284c7", borderRadius: "8px", padding: "7px 12px", fontSize: "12px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
+              title="บันทึกเลย์เอาต์นี้ไว้ออนไลน์ใน Supabase"
             >
-              <Save size={14} /> บันทึกเท็มเพลต
+              <Cloud size={14} /> บันทึกเท็มเพลตออนไลน์
             </button>
             <button
               onClick={() => { soundManager.playClick(); setPrintOpen(true); }}
@@ -638,8 +641,8 @@ export const CardPrintDesigner: React.FC<Props> = ({ students, onClose }) => {
             background: "#080d18",
           }}>
 
-            {/* Saved Templates Selection */}
-            <SecTitle ch="📂 เท็มเพลตที่บันทึกไว้ (Templates)" />
+            {/* Saved Online Templates Selection */}
+            <SecTitle ch="☁️ เท็มเพลตออนไลน์ (Supabase Cloud)" />
             <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
               <select
                 onChange={e => {
@@ -652,14 +655,14 @@ export const CardPrintDesigner: React.FC<Props> = ({ students, onClose }) => {
                 style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: "8px", color: "white", padding: "7px 10px", fontSize: "11px" }}
                 defaultValue=""
               >
-                <option value="" disabled>-- เลือกเท็มเพลตที่ต้องการใช้ --</option>
+                <option value="" disabled>-- {isLoadingTemplates ? "กำลังโหลดเท็มเพลต..." : "เลือกเท็มเพลตที่ต้องการใช้"} --</option>
                 <optgroup label="✨ Preset เริ่มต้น">
                   {PRESET_TEMPLATES.map(t => (
                     <option key={t.id} value={t.id}>{t.name}</option>
                   ))}
                 </optgroup>
                 {savedTemplates.length > 0 && (
-                  <optgroup label="💾 เท็มเพลตของคุณ">
+                  <optgroup label="☁️ เท็มเพลตออนไลน์ของคุณ">
                     {savedTemplates.map(t => (
                       <option key={t.id} value={t.id}>{t.name}</option>
                     ))}
@@ -667,13 +670,13 @@ export const CardPrintDesigner: React.FC<Props> = ({ students, onClose }) => {
                 )}
               </select>
 
-              {/* Saved custom templates pills */}
+              {/* Saved custom templates list */}
               {savedTemplates.length > 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginTop: "4px" }}>
                   {savedTemplates.map(t => (
                     <div key={t.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#0f172a", border: "1px solid #1e293b", borderRadius: "6px", padding: "4px 8px" }}>
-                      <span onClick={() => handleLoadTemplate(t)} style={{ fontSize: "11px", color: "#fb923c", cursor: "pointer", flex: 1, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {t.name}
+                      <span onClick={() => handleLoadTemplate(t)} style={{ fontSize: "11px", color: "#38bdf8", cursor: "pointer", flex: 1, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        ☁️ {t.name}
                       </span>
                       <button onClick={() => handleDeleteTemplate(t.id)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: "2px" }} title="ลบเท็มเพลตนี้">
                         <Trash2 size={12} />
