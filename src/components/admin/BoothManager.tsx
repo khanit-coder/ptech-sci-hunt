@@ -181,29 +181,30 @@ export const BoothManager: React.FC<Props> = ({ onRefresh }) => {
     await loadData();
   };
 
-  // 1. Randomize / Shuffle Booth Letters
+  // 1. Randomize / Shuffle Booth Letters (Keep booth position fixed, shuffle only assigned letters)
   const handleShuffleLetters = async () => {
     if (booths.length === 0) return;
     soundManager.playClick();
-    if (!confirm('🎲 คุณต้องการสุ่มสลับตัวอักษรที่แต่ละบูธได้รับใช่หรือไม่?')) return;
+    if (!confirm('🎲 คุณต้องการสุ่มสลับตัวอักษรที่แต่ละบูธจะได้รับใช่หรือไม่? (ตำแหน่งประจำบูธจะคงเดิม ไม่มีการสลับตำแหน่งบูธ)')) return;
 
-    // Create array of available letter positions: 0 .. targetWord.length - 1
-    const availablePositions = Array.from({ length: targetWord.length }, (_, i) => i);
+    // Target word letters array
+    const targetLetters = Array.from(targetWord);
     
-    // Fisher-Yates shuffle
-    for (let i = availablePositions.length - 1; i > 0; i--) {
+    // Fisher-Yates shuffle on letters array
+    const shuffledLetters = [...targetLetters];
+    for (let i = shuffledLetters.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [availablePositions[i], availablePositions[j]] = [availablePositions[j], availablePositions[i]];
+      [shuffledLetters[i], shuffledLetters[j]] = [shuffledLetters[j], shuffledLetters[i]];
     }
 
-    const updates = booths.map((booth, idx) => {
-      const newPos = availablePositions[idx % availablePositions.length];
-      const newLetter = targetWord[newPos] || 'A';
+    const updates = booths.map((booth) => {
+      const pos = booth.letter_position;
+      const newLetter = shuffledLetters[pos % shuffledLetters.length] || 'A';
       return {
         id: booth.id,
         letter: newLetter,
-        letter_position: newPos,
-        sort_order: newPos,
+        letter_position: booth.letter_position,
+        sort_order: booth.sort_order ?? booth.letter_position,
       };
     });
 
@@ -214,22 +215,20 @@ export const BoothManager: React.FC<Props> = ({ onRefresh }) => {
     onRefresh?.();
   };
 
-  // 2. Sequential Reset Order (A-Z / Word Order)
+  // 2. Sequential Reset Order (Reset each booth's letter to match targetWord[letter_position])
   const handleSequentialLetters = async () => {
     if (booths.length === 0) return;
     soundManager.playClick();
-    if (!confirm('🔤 คุณต้องการจัดเรียงตัวอักษรของทุกบูธตามลำดับตัวอักษรของคำเป้าหมาย (ตำแหน่ง 1, 2, 3...) ใช่หรือไม่?')) return;
+    if (!confirm('🔤 คุณต้องการเรียงตัวอักษรของทุกบูธให้ตรงตามคำเป้าหมาย (S-A-V-E-P-T-E-C-H-W-O-R-L-D) ใช่หรือไม่?')) return;
 
-    const sortedBooths = [...booths].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-
-    const updates = sortedBooths.map((booth, idx) => {
-      const pos = idx % targetWord.length;
-      const letter = targetWord[pos] || 'A';
+    const updates = booths.map((booth) => {
+      const pos = booth.letter_position;
+      const targetLetter = targetWord[pos] || targetWord[pos % targetWord.length] || 'A';
       return {
         id: booth.id,
-        letter,
-        letter_position: pos,
-        sort_order: pos,
+        letter: targetLetter,
+        letter_position: booth.letter_position,
+        sort_order: booth.sort_order ?? booth.letter_position,
       };
     });
 
@@ -289,26 +288,45 @@ export const BoothManager: React.FC<Props> = ({ onRefresh }) => {
             maxLength={30}
           />
         ) : (
-          <div className="flex flex-wrap gap-1.5">
-            {Array.from(targetWord).map((letter, pos) => {
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2.5 pt-1">
+            {Array.from(targetWord).map((targetChar, pos) => {
               const booth = booths.find((b) => b.letter_position === pos);
               return (
                 <div
                   key={pos}
-                  className="flex flex-col items-center gap-0.5"
-                  title={booth?.name}
+                  className={`p-2.5 rounded-2xl border flex flex-col items-center justify-between text-center transition-all ${
+                    booth
+                      ? 'bg-slate-950/90 border-slate-700/80 hover:border-mario-yellow'
+                      : 'bg-slate-950/40 border-slate-800/40 opacity-60'
+                  }`}
                 >
-                  <span
-                    className="w-9 h-9 rounded-lg flex items-center justify-center font-game text-sm font-black border-2 transition-colors"
+                  <div className="flex items-center justify-between w-full text-[10px] text-slate-500 font-mono mb-1">
+                    <span>#{pos + 1}</span>
+                    <span className="font-bold text-slate-400">เป้าหมาย: <strong className="text-mario-yellow font-game">{targetChar}</strong></span>
+                  </div>
+
+                  {/* Letter badge showing assigned letter */}
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center font-game text-base font-black my-1 border-2 transition-all shadow-inner"
                     style={
                       booth
-                        ? { backgroundColor: `${booth.color}30`, borderColor: `${booth.color}80`, color: booth.color }
+                        ? { backgroundColor: `${booth.color}25`, borderColor: `${booth.color}80`, color: booth.color }
                         : { backgroundColor: '#1e293b', borderColor: '#334155', color: '#475569' }
                     }
                   >
-                    {letter}
-                  </span>
-                  <span className="text-[9px] text-slate-600 font-mono">{pos + 1}</span>
+                    {booth ? booth.letter : targetChar}
+                  </div>
+
+                  {/* Booth Name */}
+                  <div className="w-full mt-1">
+                    {booth ? (
+                      <p className="text-[11px] font-bold text-slate-200 truncate w-full" title={booth.name}>
+                        {booth.icon} {booth.name}
+                      </p>
+                    ) : (
+                      <p className="text-[10px] text-slate-500 italic">ยังไม่มีบูท</p>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -386,15 +404,16 @@ export const BoothManager: React.FC<Props> = ({ onRefresh }) => {
                       : { backgroundColor: '#1e293b', border: '2px dashed #334155', color: '#475569' }
                   }
                 >
-                  {letter}
+                  {booth ? booth.letter : letter}
                 </div>
 
                 {booth ? (
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-white text-sm truncate">{booth.name}</p>
                     <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-2">
-                      <Users className="w-3 h-3" />
+                      <Users className="w-3 h-3 text-slate-500" />
                       <span>{checkinStats[booth.id] ?? 0} เช็คอิน</span>
+                      <span className="text-slate-500">• เป้าหมายคำ: '{letter}'</span>
                       {!booth.is_active && (
                         <span className="text-red-400 font-bold">• ปิดการใช้งาน</span>
                       )}
@@ -406,7 +425,7 @@ export const BoothManager: React.FC<Props> = ({ onRefresh }) => {
                 ) : (
                   <div className="flex-1">
                     <p className="text-slate-500 text-xs italic">ยังไม่มีบูท</p>
-                    <p className="text-[10px] text-slate-600">ตำแหน่ง #{pos + 1}</p>
+                    <p className="text-[10px] text-slate-600">ตำแหน่ง #{pos + 1} (เป้าหมาย: '{letter}')</p>
                   </div>
                 )}
 
