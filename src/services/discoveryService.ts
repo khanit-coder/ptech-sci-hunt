@@ -205,11 +205,51 @@ class DiscoveryService {
 
     // 2. Validate UUID format for Supabase RPC
     const isUuid = (str?: string) => Boolean(str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str));
-    const validStudentId = isUuid(student_id) ? student_id : null;
+    let validStudentId = isUuid(student_id) ? student_id : null;
     const validStaffId = isUuid(staff_id) ? staff_id : null;
 
     // If Supabase is connected, invoke the server-side RPC atomic function
     if (isSupabaseConfigured && supabase) {
+      // Ensure student_id actually exists in Supabase public.students table
+      if (validStudentId) {
+        const { data: stCheck } = await supabase
+          .from('students')
+          .select('id')
+          .eq('id', validStudentId)
+          .maybeSingle();
+
+        if (!stCheck) {
+          // If validStudentId is not in Supabase students table, search by manual_student_code
+          const codeToSearch = manual_student_code?.trim() || student_id?.trim();
+          if (codeToSearch) {
+            const { data: stByCode } = await supabase
+              .from('students')
+              .select('id')
+              .eq('student_code', codeToSearch)
+              .maybeSingle();
+
+            if (stByCode) {
+              validStudentId = stByCode.id;
+            } else {
+              // Not present in Supabase students table — set to null to avoid FK constraint error 23503
+              validStudentId = null;
+            }
+          } else {
+            validStudentId = null;
+          }
+        }
+      } else if (manual_student_code) {
+        const { data: stByCode } = await supabase
+          .from('students')
+          .select('id')
+          .eq('student_code', manual_student_code.trim())
+          .maybeSingle();
+
+        if (stByCode) {
+          validStudentId = stByCode.id;
+        }
+      }
+
       const { data, error } = await supabase.rpc('confirm_discovery_atomic', {
         p_qr_token: qr_token,
         p_student_id: validStudentId,

@@ -23,12 +23,168 @@ class StudentService {
     this.provider = provider;
   }
 
+  // Helper to query Supabase for a student by code, qr_token, external_id, or id
+  private async findStudentInSupabase(term: string): Promise<Student | null> {
+    if (!isSupabaseConfigured || !supabase) return null;
+    const clean = term.trim();
+    if (!clean) return null;
+
+    try {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean);
+      let query = supabase
+        .from('students')
+        .select('*');
+
+      if (isUuid) {
+        query = query.or(`id.eq.${clean},student_code.eq.${clean},external_id.eq.${clean}`);
+      } else {
+        query = query.or(`student_code.eq.${clean},external_id.eq.${clean}`);
+      }
+
+      const { data, error } = await query.maybeSingle();
+      if (!error && data) {
+        return data as Student;
+      }
+
+      // Case insensitive match on student_code
+      const { data: dataCase, error: errCase } = await supabase
+        .from('students')
+        .select('*')
+        .ilike('student_code', clean)
+        .maybeSingle();
+
+      if (!errCase && dataCase) {
+        return dataCase as Student;
+      }
+    } catch (err) {
+      console.warn('findStudentInSupabase error:', err);
+    }
+    return null;
+  }
+
+  // Helper to ensure a student record exists in Supabase (upserts if missing)
+  async ensureStudentInSupabase(student: Student): Promise<Student> {
+    if (!isSupabaseConfigured || !supabase) return student;
+
+    const existing = await this.findStudentInSupabase(student.student_code);
+    if (existing) {
+      return existing;
+    }
+
+    try {
+      const generateUuid = () =>
+        typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : '00000000-0000-4000-8000-' + Math.random().toString(16).substring(2, 14).padStart(12, '0');
+
+      const isMockUuid = student.id.startsWith('00000000-0000-4000-8000-0000000000');
+      const studentId = (!isMockUuid && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(student.id))
+        ? student.id
+        : generateUuid();
+
+      const recordToInsert = {
+        id: studentId,
+        student_code: student.student_code,
+        first_name: student.first_name,
+        last_name: student.last_name,
+        class_name: student.class_name || null,
+        department: student.department || null,
+        level: student.level || null,
+        student_status: student.student_status || 'active',
+        external_id: student.external_id || null,
+      };
+
+      const { data, error } = await supabase
+        .from('students')
+        .upsert(recordToInsert, { onConflict: 'student_code' })
+        .select()
+        .single();
+
+      if (!error && data) {
+        return data as Student;
+      }
+    } catch (err) {
+      console.warn('ensureStudentInSupabase error:', err);
+    }
+
+    return student;
+  }
+
   async verifyStudentQr(qrToken: string): Promise<StudentVerificationResult> {
-    return this.provider.getStudentByQrToken(qrToken);
+    const cleanToken = qrToken.trim();
+    if (!cleanToken) {
+      return { success: false, code: 'INVALID_FORMAT', message: 'กรุณาระบุรหัส QR Code', timestamp: new Date().toISOString() };
+    }
+
+    let targetCode = cleanToken;
+
+    if (cleanToken.startsWith('PTECH_STU:') || cleanToken.startsWith('STU:')) {
+      const parts = cleanToken.split(':');
+      targetCode = parts[1] || '';
+      const timestamp = parseInt(parts[2], 10);
+      if (!isNaN(timestamp)) {
+        const ageMs = Date.now() - timestamp;
+        if (ageMs > 8000) {
+          return {
+            success: false,
+            code: 'STUDENT_QR_EXPIRED',
+            message: 'STUDENT QR EXPIRED — กรุณาให้นักเรียนเปิด QR Code ใหม่อีกครั้ง (หมดอายุหลัง 5 วินาที)',
+            timestamp: new Date().toISOString(),
+          };
+        }
+      }
+    }
+
+    if (isSupabaseConfigured && supabase) {
+      const supaStudent = await this.findStudentInSupabase(targetCode);
+      if (supaStudent) {
+        return {
+          success: true,
+          code: 'VALID',
+          student: supaStudent,
+          message: 'ยืนยันตัวตนนักเรียนสำเร็จ',
+          timestamp: new Date().toISOString(),
+        };
+      }
+    }
+
+    const providerResult = await this.provider.getStudentByQrToken(qrToken);
+    if (providerResult.success && providerResult.student && isSupabaseConfigured && supabase) {
+      const syncedStudent = await this.ensureStudentInSupabase(providerResult.student);
+      return {
+        ...providerResult,
+        student: syncedStudent,
+      };
+    }
+
+    return providerResult;
   }
 
   async getStudentByCode(code: string): Promise<StudentVerificationResult> {
-    return this.provider.getStudentByCode(code);
+    const cleanCode = code.trim();
+    if (isSupabaseConfigured && supabase) {
+      const supaStudent = await this.findStudentInSupabase(cleanCode);
+      if (supaStudent) {
+        return {
+          success: true,
+          code: 'VALID',
+          student: supaStudent,
+          message: 'ยืนยันตัวตนนักเรียนสำเร็จ',
+          timestamp: new Date().toISOString(),
+        };
+      }
+    }
+
+    const providerResult = await this.provider.getStudentByCode(cleanCode);
+    if (providerResult.success && providerResult.student && isSupabaseConfigured && supabase) {
+      const syncedStudent = await this.ensureStudentInSupabase(providerResult.student);
+      return {
+        ...providerResult,
+        student: syncedStudent,
+      };
+    }
+
+    return providerResult;
   }
 
   async findStudentByQr(token: string): Promise<Student | null> {
@@ -44,6 +200,9 @@ class StudentService {
         (s.external_id && s.external_id.toLowerCase() === clean) ||
         (s.qr_token && s.qr_token.toLowerCase() === clean)
     );
+    if (found && isSupabaseConfigured && supabase) {
+      return await this.ensureStudentInSupabase(found);
+    }
     return found || null;
   }
 
