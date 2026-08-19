@@ -65,8 +65,8 @@ export const WorldRestoredMeter: React.FC<Props> = ({ stats, isLedMode = false }
 
       {/* Centerpiece: Super Giant Percentage & Expanded Counter Cards */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-center relative z-10 my-1">
-        {/* Super Giant Restored Percentage */}
-        <div className="md:col-span-6 flex flex-col items-center md:items-start text-center md:text-left">
+        {/* Super Giant Restored Percentage (Shifted slightly right) */}
+        <div className="md:col-span-6 flex flex-col items-center md:items-start text-center md:text-left pl-0 md:pl-8 lg:pl-12">
           <div className="flex items-baseline gap-2 sm:gap-4 flex-wrap justify-center md:justify-start">
             <span
               className={`font-game text-8xl sm:text-9xl lg:text-[120px] tracking-tight font-black leading-none transition-all ${

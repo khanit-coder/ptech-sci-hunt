@@ -135,25 +135,25 @@ export const ItemTypeCard: React.FC<Props> = ({ itemType, isLedMode = false }) =
               return (
                 <div
                   key={disc.discovery_id || slotIdx}
-                  className="flex-1 p-2 sm:p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-center gap-0.5 text-xs hover:bg-amber-50/60 transition-colors shadow-2xs min-h-[50px] relative overflow-hidden"
+                  className="flex-1 p-2 sm:p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-center gap-1 text-xs hover:bg-amber-50/60 transition-colors shadow-2xs min-h-[52px] relative overflow-hidden"
                 >
                   <div className="flex items-center justify-between gap-1.5 w-full">
                     <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                      <div className="w-5 h-5 rounded-md bg-amber-100 text-amber-800 border border-amber-300 flex items-center justify-center shrink-0 font-bold text-[10px]">
-                        <User className="w-3 h-3 text-mario-blue" />
+                      <div className="w-5.5 h-5.5 rounded-md bg-amber-100 text-amber-800 border border-amber-300 flex items-center justify-center shrink-0 font-bold text-[10px]">
+                        <User className="w-3.5 h-3.5 text-mario-blue" />
                       </div>
-                      <span className="font-bold text-slate-900 text-xs truncate block leading-snug">
+                      <span className="font-black text-slate-950 text-sm sm:text-base truncate block leading-snug tracking-tight">
                         {disc.student_display_name}
                       </span>
                     </div>
-                    <span className="font-mono text-[9px] text-slate-500 font-bold flex items-center gap-0.5 shrink-0 bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                    <span className="font-mono text-[9px] sm:text-[10px] text-slate-500 font-bold flex items-center gap-0.5 shrink-0 bg-white px-1.5 py-0.5 rounded border border-slate-200">
                       <Clock className="w-2.5 h-2.5 text-slate-400" />
                       {formatTimeOnly(disc.discovered_at)}
                     </span>
                   </div>
 
                   {disc.class_name && (
-                    <div className="text-[10px] text-slate-500 font-medium truncate block pl-6">
+                    <div className="text-[10px] sm:text-[11px] text-slate-500 font-bold truncate block pl-7">
                       {disc.class_name}
                     </div>
                   )}
