@@ -20,30 +20,28 @@ import {
 
 // ─── Letter Cell ─────────────────────────────────────────────────────────────
 const LetterCell: React.FC<{
-  letter: string;
-  position: number;
+  letter?: string;
+  index: number;
   collected: boolean;
-  boothName?: string;
-}> = ({ letter, position, collected, boothName }) => (
+}> = ({ letter, index, collected }) => (
   <div
-    className={`relative flex flex-col items-center justify-center rounded-xl border-2 transition-all duration-500 ${
+    className={`relative flex flex-col items-center justify-center rounded-2xl border-2 transition-all duration-300 ${
       collected
-        ? 'bg-gradient-to-b from-mario-yellow/30 to-mario-orange/20 border-mario-yellow shadow-neon-yellow'
-        : 'bg-slate-900/60 border-slate-700'
+        ? 'bg-gradient-to-b from-mario-yellow/30 via-slate-900 to-slate-950 border-mario-yellow shadow-neon-yellow'
+        : 'bg-slate-900/60 border-slate-800'
     }`}
     style={{ minWidth: 48, minHeight: 56, padding: '4px 6px' }}
-    title={boothName}
   >
     <span
-      className={`font-game text-lg sm:text-xl font-black leading-none transition-all ${
-        collected ? 'text-mario-yellow drop-shadow-[0_0_8px_rgba(249,200,14,0.8)]' : 'text-slate-600'
+      className={`font-game text-xl font-black leading-none transition-all ${
+        collected ? 'text-mario-yellow drop-shadow-[0_0_8px_rgba(249,200,14,0.8)]' : 'text-slate-700'
       }`}
     >
-      {collected ? letter : '?'}
+      {collected && letter ? letter : '?'}
     </span>
-    <span className="text-[9px] font-mono text-slate-500 mt-0.5">{position + 1}</span>
+    <span className="text-[9px] font-mono text-slate-600 mt-1">#{(index + 1).toString().padStart(2, '0')}</span>
     {collected && (
-      <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-mario-green rounded-full flex items-center justify-center">
+      <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-mario-green rounded-full flex items-center justify-center shadow">
         <CheckCircle2 className="w-3 h-3 text-white" />
       </span>
     )}
@@ -111,16 +109,19 @@ export const StudentPortalPage: React.FC = () => {
   };
 
   const targetWord = settings?.target_word || 'SAVEPTECHWORLD';
+  const totalSlotsCount = Math.max(targetWord.length, booths.length, 14);
 
-  // Build letter map: position → booth + whether collected
-  const letterMap = Array.from(targetWord.toUpperCase()).map((letter, pos) => {
-    const booth = booths.find((b) => b.letter_position === pos);
-    const collected = checkins.some((c) => c.booth_id === booth?.id);
-    return { letter, pos, booth, collected };
+  // Extract collected letters from student check-ins
+  const collectedLetters = checkins.map((c) => c.letter_awarded).filter(Boolean);
+  const collectedCount = collectedLetters.length;
+  const progress = totalSlotsCount > 0 ? (collectedCount / totalSlotsCount) * 100 : 0;
+
+  // Build grid slots: filled with collected letters in order of collection, followed by locked slots
+  const gridSlots = Array.from({ length: totalSlotsCount }).map((_, idx) => {
+    const isCollected = idx < collectedLetters.length;
+    const letter = isCollected ? collectedLetters[idx] : undefined;
+    return { index: idx, collected: isCollected, letter };
   });
-
-  const collectedCount = letterMap.filter((l) => l.collected).length;
-  const progress = targetWord.length > 0 ? (collectedCount / targetWord.length) * 100 : 0;
 
   return (
     <div className="min-h-screen bg-mario-deepBg text-slate-100 flex flex-col">
@@ -305,7 +306,7 @@ export const StudentPortalPage: React.FC = () => {
                 <span className="font-game text-[11px] text-mario-yellow">ตัวอักษรที่สะสมได้</span>
               </div>
               <span className="text-xs font-mono font-bold text-slate-300">
-                {collectedCount} / {targetWord.length}
+                {collectedCount} / {totalSlotsCount}
               </span>
             </div>
 
@@ -317,18 +318,17 @@ export const StudentPortalPage: React.FC = () => {
               />
             </div>
 
-            {/* Letter Grid */}
+            {/* Letter Grid (Unordered to keep secret target word hidden) */}
             <div
               className="grid gap-2"
               style={{ gridTemplateColumns: `repeat(auto-fill, minmax(48px, 1fr))` }}
             >
-              {letterMap.map(({ letter, pos, booth, collected }) => (
+              {gridSlots.map(({ index, collected, letter }) => (
                 <LetterCell
-                  key={pos}
-                  letter={letter}
-                  position={pos}
+                  key={index}
+                  index={index}
                   collected={collected}
-                  boothName={booth?.name}
+                  letter={letter}
                 />
               ))}
             </div>
@@ -338,12 +338,9 @@ export const StudentPortalPage: React.FC = () => {
               <div className="p-3 rounded-2xl bg-mario-yellow/10 border border-mario-yellow/30 text-center">
                 <p className="text-mario-yellow text-xs font-bold">
                   <Sparkles className="w-3.5 h-3.5 inline mr-1" />
-                  สะสมแล้ว:{' '}
-                  <span className="font-game text-sm">
-                    {letterMap
-                      .filter((l) => l.collected)
-                      .map((l) => l.letter)
-                      .join('')}
+                  ตัวอักษรที่สะสมได้ ({collectedCount} ตัว):{' '}
+                  <span className="font-game text-sm tracking-wider text-white">
+                    {collectedLetters.join('  •  ')}
                   </span>
                 </p>
               </div>
@@ -357,37 +354,42 @@ export const StudentPortalPage: React.FC = () => {
               </div>
             )}
 
-            {collectedCount === targetWord.length && (
+            {collectedCount >= totalSlotsCount && (
               <div className="p-4 rounded-2xl bg-gradient-to-r from-mario-green/20 to-mario-yellow/20 border-2 border-mario-green text-center animate-scale-pop">
                 <span className="text-3xl">🎉</span>
                 <p className="font-game text-xs text-mario-green mt-2">MISSION COMPLETE!</p>
-                <p className="text-slate-300 text-xs mt-1">สะสมครบทุกตัวอักษรแล้ว!</p>
+                <p className="text-slate-300 text-xs mt-1">สะสมตัวอักษรครบตามจำนวนแล้ว!</p>
               </div>
             )}
           </div>
 
-          {/* Booth Check-in History */}
+          {/* Booth Check-in History (Only shows booth name and checkin status, hides awarded letter) */}
           {checkins.length > 0 && (
             <div className="w-full space-y-2">
-              <p className="text-xs text-slate-400 font-mono font-bold uppercase">ประวัติการเข้าบูท</p>
+              <p className="text-xs text-slate-400 font-mono font-bold uppercase">ประวัติซุ้มกิจกรรมที่เข้าร่วมแล้ว</p>
               <div className="space-y-1.5">
                 {checkins.map((ci) => (
                   <div
                     key={ci.id}
                     className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs"
                   >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="w-7 h-7 rounded-lg flex items-center justify-center font-game text-xs font-black"
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold shrink-0"
                         style={{
-                          backgroundColor: `${ci.booth?.color}25`,
-                          color: ci.booth?.color || '#fff',
-                          border: `1.5px solid ${ci.booth?.color}60`,
+                          backgroundColor: `${ci.booth?.color || '#3B82F6'}25`,
+                          border: `1.5px solid ${ci.booth?.color || '#3B82F6'}60`,
                         }}
                       >
-                        {ci.letter_awarded}
-                      </span>
-                      <span className="text-slate-300 font-medium">{ci.booth?.name || 'บูทกิจกรรม'}</span>
+                        {ci.booth?.icon || '🏛️'}
+                      </div>
+                      <div>
+                        <p className="text-white font-bold">{ci.booth?.name || 'ซุ้มกิจกรรม'}</p>
+                        <p className="text-[10px] text-mario-green font-medium flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>เช็คอินเข้าร่วมแล้ว</span>
+                        </p>
+                      </div>
                     </div>
                     <span className="text-slate-500 font-mono text-[10px]">
                       {new Date(ci.checked_in_at).toLocaleTimeString('th-TH', {
