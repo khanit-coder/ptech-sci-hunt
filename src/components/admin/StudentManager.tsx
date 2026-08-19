@@ -4,6 +4,7 @@ import { studentService } from '@/services/studentService';
 import { exportService } from '@/services/exportService';
 import { soundManager } from '@/lib/sound';
 import { ExternalStudentRegisterModal } from '@/components/staff/ExternalStudentRegisterModal';
+import { StudentQRSheet } from '@/components/admin/StudentQRSheet';
 import { 
   Users, 
   Search, 
@@ -15,7 +16,8 @@ import {
   Trash2,
   X,
   UserPlus,
-  QrCode
+  QrCode,
+  Printer
 } from 'lucide-react';
 
 interface Props {
@@ -28,6 +30,7 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
   const [searchQuery, setSearchQuery] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [isRegisterExtOpen, setIsRegisterExtOpen] = useState(false);
+  const [isQrSheetOpen, setIsQrSheetOpen] = useState(false);
   const [formCode, setFormCode] = useState('');
   const [formFirst, setFormFirst] = useState('');
   const [formLast, setFormLast] = useState('');
@@ -104,6 +107,20 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
 
         {/* Buttons */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Print Student QR Sheet */}
+          <button
+            type="button"
+            onClick={() => {
+              soundManager.playClick();
+              setIsQrSheetOpen(true);
+            }}
+            className="px-3.5 py-2 rounded-xl bg-blue-950/80 border border-blue-500/80 text-blue-300 hover:bg-blue-900 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
+            title={`พิมพ์ QR Code นักเรียน (${filteredStudents.length} คน)`}
+          >
+            <Printer className="w-3.5 h-3.5 text-blue-400" />
+            <span>พิมพ์ QR นักเรียน ({filteredStudents.length})</span>
+          </button>
+
           {/* Register External QR Button */}
           <button
             type="button"
@@ -348,6 +365,14 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
             setIsRegisterExtOpen(false);
             onRefresh();
           }}
+        />
+      )}
+
+      {/* Student QR Print Sheet */}
+      {isQrSheetOpen && filteredStudents.length > 0 && (
+        <StudentQRSheet
+          students={filteredStudents}
+          onClose={() => setIsQrSheetOpen(false)}
         />
       )}
     </div>

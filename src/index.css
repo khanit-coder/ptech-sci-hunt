@@ -425,3 +425,224 @@
     padding: 1.5px 3px !important;
   }
 }
+
+/* ==========================================================================
+   STUDENT QR CODE SHEET STYLES
+   ========================================================================== */
+
+/* Screen grid containers */
+.stu-grid-common {
+  display: grid;
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+.stu-grid-3x3 { grid-template-columns: repeat(3, 1fr); }
+.stu-grid-2x4 { grid-template-columns: repeat(2, 1fr); }
+.stu-grid-2x2 { grid-template-columns: repeat(2, 1fr); }
+
+/* Card base */
+.stu-qr-card {
+  border: 2px dashed #0f172a;
+  border-radius: 10px;
+  padding: 8px 8px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+  background: #ffffff;
+  gap: 4px;
+  min-height: 200px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Header row */
+.stu-card-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1.5px solid #cbd5e1;
+  padding-bottom: 4px;
+}
+
+.stu-card-tag {
+  font-size: 10px;
+  font-weight: 900;
+  color: #1d4ed8;
+  letter-spacing: 0.4px;
+  font-family: sans-serif;
+}
+
+.stu-card-badge {
+  font-size: 9.5px;
+  font-weight: 900;
+  font-family: monospace;
+  padding: 1.5px 5px;
+  border-radius: 4px;
+}
+
+.stu-badge-std {
+  background: #0f172a;
+  color: #ffffff;
+  border: 1px solid #0f172a;
+}
+
+.stu-badge-ext {
+  background: #581c87;
+  color: #e9d5ff;
+  border: 1px solid #7e22ce;
+}
+
+/* QR code box */
+.stu-qr-box {
+  padding: 4px;
+  background: #ffffff;
+  border: 1.5px solid #1e293b;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Info section */
+.stu-info-box {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.stu-code {
+  font-size: 11px;
+  font-weight: 900;
+  font-family: monospace;
+  color: #1e40af;
+  background: #dbeafe;
+  border: 1px solid #93c5fd;
+  border-radius: 4px;
+  padding: 1px 6px;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stu-name {
+  font-size: 11.5px;
+  font-weight: 900;
+  color: #0f172a;
+  line-height: 1.2;
+  font-family: sans-serif;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stu-class {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #475569;
+  font-family: sans-serif;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 1px 5px;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ==========================================================================
+   STUDENT QR PRINT MEDIA QUERY
+   ========================================================================== */
+@media print {
+  .stu-grid-3x3 {
+    grid-template-columns: repeat(3, 60mm) !important;
+    grid-template-rows: repeat(3, 84mm) !important;
+    gap: 4mm !important;
+    width: 190mm !important;
+    margin: 0 auto !important;
+  }
+
+  .stu-grid-2x4 {
+    grid-template-columns: repeat(2, 92mm) !important;
+    grid-template-rows: repeat(4, 62mm) !important;
+    gap: 4mm !important;
+    width: 192mm !important;
+    margin: 0 auto !important;
+  }
+
+  .stu-grid-2x2 {
+    grid-template-columns: repeat(2, 90mm) !important;
+    grid-template-rows: repeat(2, 125mm) !important;
+    gap: 5mm !important;
+    width: 190mm !important;
+    margin: 0 auto !important;
+  }
+
+  .stu-qr-card {
+    border: 1.5px dashed #1e293b !important;
+    border-radius: 6px !important;
+    padding: 2.5mm 2.5mm !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    background: #ffffff !important;
+    gap: 1.5mm !important;
+    justify-content: flex-start !important;
+  }
+
+  .stu-card-tag {
+    font-size: 9px !important;
+    color: #1d4ed8 !important;
+  }
+
+  .stu-card-badge {
+    font-size: 9px !important;
+  }
+
+  .stu-qr-box {
+    padding: 1mm !important;
+    margin: 1mm 0 !important;
+    border: 1.5px solid #000 !important;
+  }
+
+  .stu-qr-box svg {
+    width: 34mm !important;
+    height: 34mm !important;
+  }
+
+  .stu-grid-2x2 .stu-qr-box svg {
+    width: 56mm !important;
+    height: 56mm !important;
+  }
+
+  .stu-code {
+    font-size: 10px !important;
+    background: #dbeafe !important;
+    border-color: #93c5fd !important;
+    color: #1e40af !important;
+  }
+
+  .stu-name {
+    font-size: 11px !important;
+    color: #000 !important;
+  }
+
+  .stu-class {
+    font-size: 9px !important;
+    color: #334155 !important;
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+  }
+}
+
