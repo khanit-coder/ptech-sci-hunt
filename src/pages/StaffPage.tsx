@@ -12,6 +12,7 @@ import { StudentSearchModal } from '@/components/staff/StudentSearchModal';
 import { ExternalStudentRegisterModal } from '@/components/staff/ExternalStudentRegisterModal';
 import { DiscoveryConfirmDialog } from '@/components/staff/DiscoveryConfirmDialog';
 import { StaffHistoryList } from '@/components/staff/StaffHistoryList';
+import { BoothCheckinTab } from '@/components/staff/BoothCheckinTab';
 import { LiveStatusBadge } from '@/components/dashboard/LiveStatusBadge';
 import { 
   ScanLine, 
@@ -29,11 +30,15 @@ import {
   UserPlus,
   QrCode,
   Users,
-  Search
+  Search,
+  MapPin
 } from 'lucide-react';
+
+type StaffMainTab = 'item_checkin' | 'booth_checkin';
 
 export const StaffPage: React.FC = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [mainTab, setMainTab] = useState<StaffMainTab>('item_checkin');
   const [activeStep, setActiveStep] = useState<'scan_item' | 'preview_item' | 'success' | 'already_discovered'>('scan_item');
   
   // Selected state
@@ -219,6 +224,42 @@ export const StaffPage: React.FC = () => {
 
           <LiveStatusBadge />
         </div>
+
+        {/* ── Main Tab Switcher ── */}
+        <div className="flex gap-2 p-1 bg-slate-900/80 rounded-2xl border border-slate-800">
+          <button
+            type="button"
+            onClick={() => { soundManager.playClick(); setMainTab('item_checkin'); }}
+            className={`flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+              mainTab === 'item_checkin'
+                ? 'bg-mario-orange text-white shadow-neon-red'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <QrCode className="w-3.5 h-3.5" />
+            เช็คอินไอเทม
+          </button>
+          <button
+            type="button"
+            onClick={() => { soundManager.playClick(); setMainTab('booth_checkin'); }}
+            className={`flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+              mainTab === 'booth_checkin'
+                ? 'bg-gradient-to-r from-mario-blue to-sci-cyan text-white shadow-neon-cyan'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <MapPin className="w-3.5 h-3.5" />
+            บูทกิจกรรม
+          </button>
+        </div>
+
+        {/* ── BOOTH CHECK-IN TAB ── */}
+        {mainTab === 'booth_checkin' && (
+          <BoothCheckinTab profile={profile} />
+        )}
+
+        {/* ── ITEM CHECK-IN TAB ── */}
+        {mainTab === 'item_checkin' && (<>
 
         {/* Quick Action: Register External Student Banner */}
         <div className="p-3.5 sm:p-4 rounded-3xl bg-gradient-to-r from-slate-900 via-emerald-950/40 to-slate-900 border-2 border-emerald-500/40 shadow-xl flex items-center justify-between gap-3">
@@ -496,6 +537,7 @@ export const StaffPage: React.FC = () => {
             isSubmitting={isSubmitting}
           />
         )}
+        </>)}{/* end item_checkin tab */}
       </div>
     </div>
   );

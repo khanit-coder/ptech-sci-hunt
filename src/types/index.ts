@@ -158,9 +158,53 @@ export interface EventSettings {
   show_item_hints: boolean;
   maintenance_mode: boolean;
   glitch_effect_enabled?: boolean;
+  // Booth system
+  target_word: string;
+  booths_enabled: boolean;
   created_at?: string;
   updated_at?: string;
 }
+
+export interface Booth {
+  id: string;
+  name: string;
+  description?: string;
+  letter: string;           // Single uppercase letter e.g. 'S'
+  letter_position: number;  // 0-based fixed position in target_word
+  icon: string;
+  color: string;
+  is_active: boolean;
+  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
+  // Aggregated (joined)
+  checkin_count?: number;
+}
+
+export interface BoothCheckin {
+  id: string;
+  booth_id: string;
+  booth?: Booth;
+  student_id: string;
+  student?: Student;
+  staff_id?: string;
+  letter_awarded: string;
+  checked_in_at: string;
+  notes?: string;
+}
+
+export interface BoothCheckinResult {
+  success: boolean;
+  code: string;
+  message: string;
+  letter?: string;
+  letter_position?: number;
+  booth_name?: string;
+  checkin_id?: string;
+  checked_in_at?: string;
+  student?: Student;
+}
+
 
 export interface DashboardStats {
   total_items: number;

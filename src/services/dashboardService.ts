@@ -20,7 +20,11 @@ export const INITIAL_EVENT_SETTINGS: EventSettings = {
   show_item_hints: true,
   maintenance_mode: false,
   glitch_effect_enabled: true,
+  // Booth system
+  target_word: 'SAVEPTECHWORLD',
+  booths_enabled: true,
 };
+
 
 class DashboardService {
   private settings: EventSettings = { ...INITIAL_EVENT_SETTINGS };

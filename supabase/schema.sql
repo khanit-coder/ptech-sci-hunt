@@ -639,3 +639,149 @@ DO $$ BEGIN
     ALTER PUBLICATION supabase_realtime ADD TABLE public.event_settings;
 EXCEPTION WHEN duplicate_object THEN null;
 END $$;
+
+-- ==============================================================================
+-- BOOTH ACTIVITY CHECK-IN SYSTEM
+-- saveptechworld (14 booths × 14 letters)
+-- ==============================================================================
+
+-- 9. ADD BOOTH COLUMNS TO EVENT_SETTINGS
+ALTER TABLE public.event_settings
+    ADD COLUMN IF NOT EXISTS target_word TEXT NOT NULL DEFAULT 'SAVEPTECHWORLD',
+    ADD COLUMN IF NOT EXISTS booths_enabled BOOLEAN NOT NULL DEFAULT true;
+
+-- 10. BOOTHS TABLE (Activity Booth Registry)
+CREATE TABLE IF NOT EXISTS public.booths (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL,                         -- "บูทฟิสิกส์", "บูทเคมี"
+    description TEXT,                           -- อธิบายกิจกรรมในบูท
+    letter CHAR(1) NOT NULL,                    -- ตัวอักษรประจำบูท เช่น 'S'
+    letter_position INT NOT NULL,               -- ตำแหน่งในคำ (0-based), คงที่ตลอด
+    icon TEXT NOT NULL DEFAULT '🏛️',
+    color TEXT NOT NULL DEFAULT '#3B82F6',
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(letter_position)                     -- แต่ละตำแหน่งมีได้บูทเดียว
+);
+
+-- 11. BOOTH_CHECKINS TABLE (Student per-booth check-in records)
+CREATE TABLE IF NOT EXISTS public.booth_checkins (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    booth_id UUID NOT NULL REFERENCES public.booths(id) ON DELETE CASCADE,
+    student_id UUID NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
+    staff_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    letter_awarded CHAR(1) NOT NULL,            -- ตัวอักษรที่ได้รับจากบูทนี้
+    checked_in_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    notes TEXT,
+    UNIQUE(booth_id, student_id)                -- เช็คอินได้ครั้งเดียวต่อบูทต่อนักเรียน
+);
+
+-- 12. INDEXES
+CREATE INDEX IF NOT EXISTS idx_booths_position ON public.booths(letter_position);
+CREATE INDEX IF NOT EXISTS idx_booths_active ON public.booths(is_active);
+CREATE INDEX IF NOT EXISTS idx_booth_checkins_student ON public.booth_checkins(student_id);
+CREATE INDEX IF NOT EXISTS idx_booth_checkins_booth ON public.booth_checkins(booth_id);
+CREATE INDEX IF NOT EXISTS idx_booth_checkins_time ON public.booth_checkins(checked_in_at DESC);
+
+-- 13. RPC: booth_checkin_atomic (Concurrency-safe booth check-in)
+CREATE OR REPLACE FUNCTION public.booth_checkin_atomic(
+    p_booth_id UUID,
+    p_student_id UUID,
+    p_staff_id UUID DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_booth RECORD;
+    v_existing RECORD;
+    v_event_status TEXT;
+    v_new_id UUID;
+BEGIN
+    -- 1. Check event status
+    SELECT status, booths_enabled INTO v_event_status, v_booth.is_active
+    FROM public.event_settings WHERE id = 1;
+
+    -- 2. Fetch booth
+    SELECT * INTO v_booth FROM public.booths WHERE id = p_booth_id AND is_active = true FOR UPDATE;
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('success', false, 'code', 'BOOTH_NOT_FOUND', 'message', 'ไม่พบบูทนี้ในระบบ');
+    END IF;
+
+    -- 3. Check if already checked in
+    SELECT * INTO v_existing FROM public.booth_checkins
+    WHERE booth_id = p_booth_id AND student_id = p_student_id;
+
+    IF FOUND THEN
+        RETURN jsonb_build_object(
+            'success', false,
+            'code', 'ALREADY_CHECKEDIN',
+            'message', 'นักเรียนเช็คอินบูทนี้แล้ว!',
+            'letter', v_booth.letter,
+            'booth_name', v_booth.name,
+            'checked_in_at', v_existing.checked_in_at
+        );
+    END IF;
+
+    -- 4. Insert check-in (atomic)
+    BEGIN
+        INSERT INTO public.booth_checkins (booth_id, student_id, staff_id, letter_awarded)
+        VALUES (p_booth_id, p_student_id, p_staff_id, v_booth.letter)
+        RETURNING id INTO v_new_id;
+
+        -- Audit log
+        INSERT INTO public.audit_logs (user_id, action, target_type, target_id, metadata)
+        VALUES (
+            p_staff_id,
+            'BOOTH_CHECKIN',
+            'booth_checkin',
+            v_new_id::text,
+            jsonb_build_object('booth_id', p_booth_id, 'student_id', p_student_id, 'letter', v_booth.letter)
+        );
+
+        RETURN jsonb_build_object(
+            'success', true,
+            'code', 'CHECKIN_SUCCESS',
+            'message', 'เช็คอินสำเร็จ! ได้รับตัวอักษร ' || v_booth.letter,
+            'letter', v_booth.letter,
+            'letter_position', v_booth.letter_position,
+            'booth_name', v_booth.name,
+            'checkin_id', v_new_id
+        );
+    EXCEPTION WHEN unique_violation THEN
+        RETURN jsonb_build_object(
+            'success', false,
+            'code', 'ALREADY_CHECKEDIN',
+            'message', 'นักเรียนเช็คอินบูทนี้แล้ว (race condition)',
+            'letter', v_booth.letter
+        );
+    END;
+END;
+$$;
+
+-- 14. RLS POLICIES FOR BOOTHS AND BOOTH_CHECKINS
+ALTER TABLE public.booths ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.booth_checkins ENABLE ROW LEVEL SECURITY;
+
+-- Booths: anyone can read, only admin can write
+CREATE POLICY "Public read booths" ON public.booths
+    FOR SELECT USING (true);
+CREATE POLICY "Admin manage booths" ON public.booths
+    FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+-- Booth checkins: public read, staff can insert
+CREATE POLICY "Public read booth checkins" ON public.booth_checkins
+    FOR SELECT USING (true);
+CREATE POLICY "Staff insert booth checkins" ON public.booth_checkins
+    FOR INSERT WITH CHECK (true);
+CREATE POLICY "Admin manage booth checkins" ON public.booth_checkins
+    FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+-- 15. REALTIME FOR BOOTH CHECKINS
+DO $$ BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.booth_checkins;
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;

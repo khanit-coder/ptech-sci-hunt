@@ -30,6 +30,7 @@ import { EventSettingsForm } from '@/components/admin/EventSettingsForm';
 import { AuditLogTable } from '@/components/admin/AuditLogTable';
 import { SystemHealthView } from '@/components/admin/SystemHealthView';
 import { SimulatorModal } from '@/components/admin/SimulatorModal';
+import { BoothManager } from '@/components/admin/BoothManager';
 
 import { 
   Tv, 
@@ -45,11 +46,12 @@ import {
   Plus, 
   Upload, 
   Sparkles,
-  ShieldAlert
+  ShieldAlert,
+  MapPin
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-type AdminTab = 'overview' | 'items' | 'students' | 'discoveries' | 'staff' | 'settings' | 'audit_logs' | 'health';
+type AdminTab = 'overview' | 'items' | 'students' | 'discoveries' | 'staff' | 'settings' | 'audit_logs' | 'health' | 'booths';
 
 export const AdminPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
@@ -164,6 +166,7 @@ export const AdminPage: React.FC = () => {
           { id: 'items', label: `Items (${items.length})`, icon: Layers },
           { id: 'students', label: `Students (${students.length})`, icon: Users },
           { id: 'discoveries', label: `Discoveries (${discoveries.length})`, icon: Trophy },
+          { id: 'booths', label: 'Booths (บูท)', icon: MapPin },
           { id: 'staff', label: 'Staff & Accounts', icon: UserCheck },
           { id: 'settings', label: 'Event Settings', icon: Settings },
           { id: 'audit_logs', label: 'Audit Logs', icon: FileText },
@@ -242,6 +245,10 @@ export const AdminPage: React.FC = () => {
 
       {activeTab === 'health' && (
         <SystemHealthView />
+      )}
+
+      {activeTab === 'booths' && (
+        <BoothManager onRefresh={loadAllData} />
       )}
 
       {/* Modals */}
