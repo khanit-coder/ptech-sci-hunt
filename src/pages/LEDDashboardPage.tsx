@@ -7,8 +7,8 @@ import { RecentDiscoveries } from '@/components/dashboard/RecentDiscoveries';
 import { DiscoveryAlertModal } from '@/components/dashboard/DiscoveryAlertModal';
 import { CelebrationOverlay } from '@/components/dashboard/CelebrationOverlay';
 import { getSavedFontScale, applyFontScale } from '@/components/dashboard/FontSizeController';
-import { GlitchOverlay } from '@/components/effects/GlitchOverlay';
-import { Star } from 'lucide-react';
+import { LuckyDrawModal } from '@/components/dashboard/LuckyDrawModal';
+import { Star, Trophy } from 'lucide-react';
 
 export const LEDDashboardPage: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats>({
@@ -23,6 +23,7 @@ export const LEDDashboardPage: React.FC = () => {
   const [settings, setSettings] = useState<EventSettings | null>(null);
   const [alertQueue, setAlertQueue] = useState<Discovery[]>([]);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [isLuckyDrawOpen, setIsLuckyDrawOpen] = useState(false);
 
   const loadData = async () => {
     const [s, types, recent, st] = await Promise.all([
@@ -98,12 +99,19 @@ export const LEDDashboardPage: React.FC = () => {
   return (
     <div className="dashboard-scalable w-screen h-screen max-h-screen bg-[#F0F4F8] text-slate-900 p-2.5 sm:p-4 lg:p-5 flex flex-col justify-between select-none overflow-hidden relative">
       
-      {/* Cyber Glitch Overlay */}
-      <GlitchOverlay
-        restorationPercentage={stats.world_restored_percentage}
-        enabled={settings?.glitch_effect_enabled ?? true}
-      />
-      
+      {/* Floating Lucky Draw Button for LED Stage Control */}
+      <div className="absolute top-3 right-3 z-30 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setIsLuckyDrawOpen(true)}
+          className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-mario-yellow via-mario-orange to-mario-red text-slate-950 font-black text-xs shadow-neon-yellow hover:opacity-95 transition-all flex items-center gap-1.5 pixel-btn cursor-pointer"
+          title="สุ่มผู้โชคดีรางวัลใหญ่"
+        >
+          <Trophy className="w-4 h-4 text-slate-950" />
+          <span>🎰 สุ่มผู้โชคดี</span>
+        </button>
+      </div>
+
       {/* Top Header: Presentation Banner with Passport Style */}
       <div className="text-center space-y-1 mb-1">
         <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full passport-badge-red text-white font-game text-xs tracking-wider shadow-sm">
@@ -142,6 +150,12 @@ export const LEDDashboardPage: React.FC = () => {
       {showCelebration && (
         <CelebrationOverlay onClose={() => setShowCelebration(false)} />
       )}
+
+      {/* Lucky Draw Grand Prize Modal */}
+      <LuckyDrawModal
+        isOpen={isLuckyDrawOpen}
+        onClose={() => setIsLuckyDrawOpen(false)}
+      />
     </div>
   );
 };

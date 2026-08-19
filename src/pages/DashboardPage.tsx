@@ -97,12 +97,6 @@ export const DashboardPage: React.FC = () => {
   return (
     <div className="dashboard-scalable min-h-screen pb-12 pt-3 px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-3 sm:space-y-4 relative">
       
-      {/* Cyber Glitch Distortion Overlay */}
-      <GlitchOverlay
-        restorationPercentage={stats.world_restored_percentage}
-        enabled={settings?.glitch_effect_enabled ?? true}
-      />
-      
       {/* Top Banner & Passport Header Toolbar */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-3 pb-3 border-b-2 border-slate-300">
         <div>
