@@ -5,6 +5,7 @@ import { exportService } from '@/services/exportService';
 import { soundManager } from '@/lib/sound';
 import { ExternalStudentRegisterModal } from '@/components/staff/ExternalStudentRegisterModal';
 import { StudentQRSheet } from '@/components/admin/StudentQRSheet';
+import { CardPrintDesigner } from '@/components/admin/CardPrintDesigner';
 import { 
   Users, 
   Search, 
@@ -48,6 +49,7 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
   const [isAdding, setIsAdding] = useState(false);
   const [isRegisterExtOpen, setIsRegisterExtOpen] = useState(false);
   const [qrSheetTarget, setQrSheetTarget] = useState<'internal' | 'external' | null>(null);
+  const [isCardDesignerOpen, setIsCardDesignerOpen] = useState(false);
 
   // Form states for single student addition
   const [formCode, setFormCode] = useState('');
@@ -385,6 +387,18 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
               <span>ลบทั้งหมด ({students.length})</span>
             </button>
           </div>
+
+          {/* Card Print Designer Button */}
+          <button
+            type="button"
+            onClick={() => { soundManager.playClick(); setIsCardDesignerOpen(true); }}
+            disabled={sortedStudents.length === 0}
+            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-violet-700 to-purple-700 border border-violet-500/60 text-white hover:from-violet-600 hover:to-purple-600 text-xs font-bold shadow-md transition-all flex items-center gap-1.5 disabled:opacity-40"
+            title={`ออกแบบการ์ดและปริ้น QR Code (${sortedStudents.length} คน)`}
+          >
+            <span>🎨</span>
+            <span>Card Designer ({sortedStudents.length})</span>
+          </button>
 
           {/* Import Wizard Button */}
           <button
@@ -729,6 +743,14 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
           students={qrSheetTarget === 'internal' ? printInternalList : printExternalList}
           title={qrSheetTarget === 'internal' ? 'นักเรียนภายใน (Internal Students)' : 'นักเรียนภายนอก (External Visitors)'}
           onClose={() => setQrSheetTarget(null)}
+        />
+      )}
+
+      {/* Card Print Designer Modal */}
+      {isCardDesignerOpen && (
+        <CardPrintDesigner
+          students={sortedStudents}
+          onClose={() => setIsCardDesignerOpen(false)}
         />
       )}
     </div>
