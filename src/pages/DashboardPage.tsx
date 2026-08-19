@@ -8,8 +8,9 @@ import { DiscoveryAlertModal } from '@/components/dashboard/DiscoveryAlertModal'
 import { CelebrationOverlay } from '@/components/dashboard/CelebrationOverlay';
 import { LiveStatusBadge } from '@/components/dashboard/LiveStatusBadge';
 import { FontSizeController, getSavedFontScale, applyFontScale } from '@/components/dashboard/FontSizeController';
+import { LuckyDrawModal } from '@/components/dashboard/LuckyDrawModal';
 import { GlitchOverlay } from '@/components/effects/GlitchOverlay';
-import { Radio, Sparkles, Tv, Star, ShieldCheck, MapPin, Award } from 'lucide-react';
+import { Radio, Sparkles, Tv, Star, ShieldCheck, MapPin, Award, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const DashboardPage: React.FC = () => {
@@ -25,6 +26,7 @@ export const DashboardPage: React.FC = () => {
   const [settings, setSettings] = useState<EventSettings | null>(null);
   const [alertQueue, setAlertQueue] = useState<Discovery[]>([]);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [isLuckyDrawOpen, setIsLuckyDrawOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
@@ -120,8 +122,19 @@ export const DashboardPage: React.FC = () => {
           </h1>
         </div>
 
-        {/* Action Controls: Font Scale Adjuster + Status */}
+        {/* Action Controls: Font Scale Adjuster + Lucky Draw + Status */}
         <div className="flex items-center gap-2 flex-wrap justify-end">
+          {/* Lucky Draw Button */}
+          <button
+            type="button"
+            onClick={() => setIsLuckyDrawOpen(true)}
+            className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-mario-yellow via-mario-orange to-mario-red text-slate-950 font-black text-xs shadow-neon-yellow hover:opacity-95 transition-all flex items-center gap-1.5 pixel-btn cursor-pointer"
+            title="สุ่มผู้โชคดีรางวัลใหญ่จากนักเรียนที่สะสมตัวอักษรครบทุกซุ้ม"
+          >
+            <Trophy className="w-4 h-4 text-slate-950" />
+            <span>🎰 สุ่มผู้โชคดี</span>
+          </button>
+
           {/* Font Size Setting Control */}
           <FontSizeController />
 
@@ -170,6 +183,12 @@ export const DashboardPage: React.FC = () => {
       {showCelebration && (
         <CelebrationOverlay onClose={() => setShowCelebration(false)} />
       )}
+
+      {/* Lucky Draw Grand Prize Modal */}
+      <LuckyDrawModal
+        isOpen={isLuckyDrawOpen}
+        onClose={() => setIsLuckyDrawOpen(false)}
+      />
     </div>
   );
 };

@@ -345,6 +345,23 @@ class BoothService {
     return { success: false, message: 'ไม่ได้เชื่อมต่อฐานข้อมูล' };
   }
 
+  async resetAllBoothCheckins(): Promise<{ success: boolean; message: string }> {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase
+          .from('booth_checkins')
+          .delete()
+          .neq('id', '00000000-0000-0000-0000-000000000000');
+        if (error) return { success: false, message: error.message };
+        return { success: true, message: 'ลบข้อมูลการเช็คอินบูททั้งหมดสำเร็จ' };
+      } catch (err: any) {
+        return { success: false, message: err.message };
+      }
+    }
+    mockCheckins.length = 0;
+    return { success: true, message: 'ลบข้อมูลการเช็คอินบูททั้งหมดสำเร็จ' };
+  }
+
   // ----------------------------------------------------------------
   // MOCK DATA
   // ----------------------------------------------------------------

@@ -349,7 +349,8 @@ class AdminService {
 
   async resetAllEventData(): Promise<void> {
     await discoveryService.resetAllDiscoveries();
-    await this.logAction('EVENT_RESET', 'all_discoveries', 'all', { note: 'Hard reset by admin' });
+    await boothService.resetAllBoothCheckins();
+    await this.logAction('EVENT_RESET', 'all_discoveries_and_booths', 'all', { note: 'Hard reset by admin' });
   }
 
   // --------------------------------------------------------------------------
