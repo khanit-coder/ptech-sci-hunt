@@ -5,6 +5,7 @@ import { studentService } from './studentService';
 import { discoveryService } from './discoveryService';
 import { dashboardService } from './dashboardService';
 import { authService } from './authService';
+import { boothService } from './boothService';
 
 const INITIAL_AUDIT_LOGS: AuditLog[] = [
   {
@@ -260,6 +261,59 @@ class AdminService {
     // In-memory mock
     this.staffUsers.unshift(newProfile);
     return { success: true, profile: newProfile, message: 'สร้างบัญชีสตาฟสำเร็จ!' };
+  }
+
+  async batchCreateStaffUsers(params: {
+    prefixUsername: string;
+    prefixPassword: string;
+    startIndex: number;
+    count: number;
+    staffDuty: 'item_scanner' | 'booth_staff';
+    autoLinkBooths?: boolean;
+  }): Promise<{ success: boolean; createdCount: number; message: string; createdList: Profile[] }> {
+    const booths = await boothService.getBooths();
+    const createdList: Profile[] = [];
+
+    for (let i = 0; i < params.count; i++) {
+      const num = params.startIndex + i;
+      const padNum = String(num).padStart(2, '0');
+      const username = `${params.prefixUsername.trim()}${padNum}`;
+      const password = `${params.prefixPassword.trim()}${padNum}`;
+
+      let assignedBoothId: string | undefined;
+      let assignedBoothName: string | undefined;
+
+      if (params.staffDuty === 'booth_staff' && params.autoLinkBooths && booths.length > 0) {
+        const booth = booths[i % booths.length];
+        if (booth) {
+          assignedBoothId = booth.id;
+          assignedBoothName = booth.name;
+        }
+      }
+
+      const res = await this.createStaffUser({
+        username,
+        password,
+        role: 'staff',
+        staff_duty: params.staffDuty,
+        assigned_booth_id: assignedBoothId,
+        assigned_booth_name: assignedBoothName,
+      });
+
+      if (res.success && res.profile) {
+        createdList.push(res.profile);
+      }
+    }
+
+    const startTag = `${params.prefixUsername.trim()}${String(params.startIndex).padStart(2, '0')}`;
+    const endTag = `${params.prefixUsername.trim()}${String(params.startIndex + params.count - 1).padStart(2, '0')}`;
+
+    return {
+      success: true,
+      createdCount: createdList.length,
+      message: `สร้างบัญชีสตาฟแบบกลุ่มสำเร็จจำนวน ${createdList.length} บัญชี (${startTag} ถึง ${endTag})`,
+      createdList,
+    };
   }
 
   async deleteStaffUser(id: string): Promise<{ success: boolean; message: string }> {

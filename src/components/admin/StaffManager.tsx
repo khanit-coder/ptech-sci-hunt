@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Profile, UserRole, StaffDutyType, Booth } from '@/types';
 import { adminService } from '@/services/adminService';
 import { boothService } from '@/services/boothService';
+import { exportService } from '@/services/exportService';
 import { soundManager } from '@/lib/sound';
-import { UserCheck, ShieldCheck, UserX, Key, Plus, Lock, X, Trash2, MapPin, Scan } from 'lucide-react';
+import { UserCheck, ShieldCheck, UserX, Key, Plus, Lock, X, Trash2, MapPin, Scan, Sparkles, Download, Printer } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 interface Props {
@@ -20,6 +21,16 @@ export const StaffManager: React.FC<Props> = ({ staffList, onRefresh }) => {
   const [assignedBoothId, setAssignedBoothId] = useState<string>('');
   const [booths, setBooths] = useState<Booth[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Batch staff creator state
+  const [isBatchOpen, setIsBatchOpen] = useState(false);
+  const [batchPrefixUser, setBatchPrefixUser] = useState('staff');
+  const [batchPrefixPass, setBatchPrefixPass] = useState('World');
+  const [batchStartIndex, setBatchStartIndex] = useState(1);
+  const [batchCount, setBatchCount] = useState(14);
+  const [batchDuty, setBatchDuty] = useState<StaffDutyType>('booth_staff');
+  const [autoLinkBooths, setAutoLinkBooths] = useState(true);
+  const [isBatchSaving, setIsBatchSaving] = useState(false);
 
   useEffect(() => {
     boothService.getBooths().then((bList) => {
@@ -63,6 +74,44 @@ export const StaffManager: React.FC<Props> = ({ staffList, onRefresh }) => {
     }
   };
 
+  const handleBatchCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!batchPrefixUser.trim()) {
+      alert('กรุณาระบุ Prefix สำหรับ Username');
+      return;
+    }
+    if (!batchPrefixPass.trim()) {
+      alert('กรุณาระบุ Prefix สำหรับ Password');
+      return;
+    }
+    if (batchCount <= 0 || batchCount > 50) {
+      alert('จำนวนการสร้างต้องอยู่ระหว่าง 1 ถึง 50');
+      return;
+    }
+
+    soundManager.playClick();
+    setIsBatchSaving(true);
+
+    const res = await adminService.batchCreateStaffUsers({
+      prefixUsername: batchPrefixUser,
+      prefixPassword: batchPrefixPass,
+      startIndex: batchStartIndex,
+      count: batchCount,
+      staffDuty: batchDuty,
+      autoLinkBooths,
+    });
+
+    setIsBatchSaving(false);
+    if (res.success) {
+      soundManager.playDiscovery();
+      alert(`🎉 ${res.message}`);
+      setIsBatchOpen(false);
+      onRefresh();
+    } else {
+      alert(res.message);
+    }
+  };
+
   const handleDeleteStaff = async (st: Profile) => {
     if (!confirm(`คุณแน่ใจหรือไม่ที่จะลบบัญชีสตาฟ "${st.username || st.display_name}"?`)) return;
     soundManager.playClick();
@@ -77,24 +126,55 @@ export const StaffManager: React.FC<Props> = ({ staffList, onRefresh }) => {
   return (
     <div className="space-y-6">
       
-      {/* Header and Add Button */}
-      <div className="flex items-center justify-between">
+      {/* Header and Action Buttons */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h3 className="font-game text-xs text-mario-yellow">STAFF & USER ACCOUNTS</h3>
           <p className="text-xs text-slate-400">จัดการบัญชีผู้ใช้งานสตาฟประจำจุดสแกนไอเท็ม และประจำบูธกิจกรรม</p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            soundManager.playClick();
-            setIsCreating(true);
-          }}
-          className="px-4 py-2 rounded-xl bg-gradient-to-r from-mario-orange to-mario-yellow text-slate-950 text-xs font-bold shadow hover:opacity-95 transition-all flex items-center gap-1.5 pixel-btn"
-        >
-          <Plus className="w-4 h-4" />
-          <span>เพิ่มเจ้าหน้าที่สตาฟใหม่</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Export Staff List */}
+          <button
+            type="button"
+            onClick={() => {
+              soundManager.playClick();
+              exportService.exportStaffAccounts(staffList, 'xlsx');
+            }}
+            className="px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 text-xs font-bold transition-all flex items-center gap-1.5"
+            title="ดาวน์โหลดรายชื่อบัญชีสตาฟทั้งหมดเป็นไฟล์ Excel"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Export Excel</span>
+          </button>
+
+          {/* Batch Staff Generator Button */}
+          <button
+            type="button"
+            onClick={() => {
+              soundManager.playClick();
+              setIsBatchOpen(true);
+            }}
+            className="px-3.5 py-2 rounded-xl bg-purple-950/90 border border-purple-500/80 text-purple-200 hover:bg-purple-900 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
+            title="สร้างบัญชีสตาฟทีละหลายๆ บัญชี เช่น staff01-staff14"
+          >
+            <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
+            <span>⚡ สร้างสตาฟแบบกลุ่ม (Batch)</span>
+          </button>
+
+          {/* Single Staff Add Button */}
+          <button
+            type="button"
+            onClick={() => {
+              soundManager.playClick();
+              setIsCreating(true);
+            }}
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-mario-orange to-mario-yellow text-slate-950 text-xs font-bold shadow hover:opacity-95 transition-all flex items-center gap-1.5 pixel-btn"
+          >
+            <Plus className="w-4 h-4" />
+            <span>เพิ่มสตาฟรายบุคคล</span>
+          </button>
+        </div>
       </div>
 
       {/* Staff Table */}
@@ -123,7 +203,7 @@ export const StaffManager: React.FC<Props> = ({ staffList, onRefresh }) => {
                   <tr key={st.id} className="hover:bg-slate-800/40 transition-colors">
                     <td className="py-3.5 px-4 font-bold text-white font-mono">
                       <div className="flex items-center gap-2">
-                        <span className="text-mario-yellow">@{st.username || st.email.split('@')[0]}</span>
+                        <span className="text-mario-yellow">@{st.username || st.email?.split('@')[0]}</span>
                       </div>
                     </td>
                     <td className="py-3.5 px-4">
@@ -173,7 +253,7 @@ export const StaffManager: React.FC<Props> = ({ staffList, onRefresh }) => {
         </div>
       </div>
 
-      {/* Create Modal */}
+      {/* ── Single Create Modal ── */}
       {isCreating && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <div className="max-w-md w-full bg-slate-900 border-2 border-slate-700 rounded-3xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -314,6 +394,188 @@ export const StaffManager: React.FC<Props> = ({ staffList, onRefresh }) => {
                 className="w-full py-2.5 rounded-xl bg-gradient-to-r from-mario-orange to-mario-yellow text-slate-950 font-bold shadow hover:opacity-95 transition-all text-xs disabled:opacity-50 mt-2"
               >
                 {isSaving ? 'กำลังบันทึก...' : 'สร้างบัญชีผู้ใช้งาน'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Batch Create Staff Modal ── */}
+      {isBatchOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="max-w-lg w-full bg-slate-900 border-2 border-purple-600/80 rounded-3xl p-6 space-y-4 max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-purple-400" />
+                <h4 className="font-game text-xs text-mario-yellow">BATCH CREATE STAFF ACCOUNTS</h4>
+              </div>
+              <button onClick={() => setIsBatchOpen(false)} className="p-1 rounded bg-slate-800 text-slate-400 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleBatchCreate} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Prefix Username */}
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    คำนำหน้า Username <span className="text-mario-red">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={batchPrefixUser}
+                    onChange={(e) => setBatchPrefixUser(e.target.value)}
+                    placeholder="เช่น staff"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono focus:border-mario-orange"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1">เช่น `staff` ➔ staff01, staff02...</p>
+                </div>
+
+                {/* Prefix Password */}
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    คำนำหน้า Password <span className="text-mario-red">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={batchPrefixPass}
+                    onChange={(e) => setBatchPrefixPass(e.target.value)}
+                    placeholder="เช่น World"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono focus:border-mario-orange"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1">เช่น `World` ➔ World01, World02...</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {/* Start index */}
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">ลำดับเริ่มต้น (Start Index)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={99}
+                    value={batchStartIndex}
+                    onChange={(e) => setBatchStartIndex(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono"
+                  />
+                </div>
+
+                {/* Count */}
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">จำนวนที่ต้องการสร้าง (Count)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    value={batchCount}
+                    onChange={(e) => setBatchCount(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono text-mario-yellow font-bold"
+                  />
+                </div>
+              </div>
+
+              {/* Staff Duty Selection */}
+              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+                <label className="block text-amber-300 font-bold text-xs">
+                  📍 กำหนดหน้าที่สำหรับสตาฟชุดนี้:
+                </label>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <label
+                    className={`p-2.5 rounded-xl border flex items-center gap-2 cursor-pointer transition-all ${
+                      batchDuty === 'booth_staff'
+                        ? 'bg-emerald-950/80 border-emerald-500 text-emerald-200'
+                        : 'bg-slate-900 border-slate-800 text-slate-400'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="batchDuty"
+                      checked={batchDuty === 'booth_staff'}
+                      onChange={() => setBatchDuty('booth_staff')}
+                      className="text-emerald-500"
+                    />
+                    <MapPin className="w-4 h-4 text-mario-orange shrink-0" />
+                    <div>
+                      <p className="font-bold text-xs">อยู่ประจำบูธกิจกรรม</p>
+                      <p className="text-[10px] text-slate-400">เช็คอินมอบตัวอักษร</p>
+                    </div>
+                  </label>
+
+                  <label
+                    className={`p-2.5 rounded-xl border flex items-center gap-2 cursor-pointer transition-all ${
+                      batchDuty === 'item_scanner'
+                        ? 'bg-cyan-950/80 border-cyan-500 text-cyan-200'
+                        : 'bg-slate-900 border-slate-800 text-slate-400'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="batchDuty"
+                      checked={batchDuty === 'item_scanner'}
+                      onChange={() => setBatchDuty('item_scanner')}
+                      className="text-cyan-500"
+                    />
+                    <Scan className="w-4 h-4 text-cyan-400 shrink-0" />
+                    <div>
+                      <p className="font-bold text-xs">อยู่สแกนไอเท็มลับ</p>
+                      <p className="text-[10px] text-slate-400">ยืนยันการค้นพบไอเท็ม</p>
+                    </div>
+                  </label>
+                </div>
+
+                {batchDuty === 'booth_staff' && (
+                  <label className="flex items-center gap-2 text-xs text-emerald-300 font-medium pt-1 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={autoLinkBooths}
+                      onChange={(e) => setAutoLinkBooths(e.target.checked)}
+                      className="rounded text-mario-green focus:ring-0"
+                    />
+                    <span>☑️ จับคู่บัญชีสตาฟตามลำดับบูธกิจกรรม 1 ถึง {booths.length || batchCount} ให้อัตโนมัติ</span>
+                  </label>
+                )}
+              </div>
+
+              {/* Real-time Preview Box */}
+              <div className="p-3.5 rounded-xl bg-slate-950/90 border border-slate-800 font-mono space-y-1.5">
+                <p className="text-slate-400 text-[11px] font-bold">💡 ตัวอย่างรายการบัญชีที่จะถูกสร้างขึ้น ({batchCount} บัญชี):</p>
+                <div className="max-h-28 overflow-y-auto space-y-1 pr-1 text-[11px]">
+                  {Array.from({ length: Math.min(batchCount, 5) }).map((_, i) => {
+                    const num = batchStartIndex + i;
+                    const padNum = String(num).padStart(2, '0');
+                    const u = `${batchPrefixUser.trim()}${padNum}`;
+                    const p = `${batchPrefixPass.trim()}${padNum}`;
+                    const booth = booths[i % booths.length];
+                    return (
+                      <div key={i} className="flex items-center justify-between text-slate-300">
+                        <span>@{u} (รหัส: {p})</span>
+                        <span className="text-mario-yellow text-[10px]">
+                          {batchDuty === 'booth_staff'
+                            ? booth
+                              ? `➔ บูท: ${booth.name}`
+                              : `➔ บูธลำดับ #${i + 1}`
+                            : '➔ สแกนไอเท็มลับ'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {batchCount > 5 && (
+                    <p className="text-slate-600 text-[10px] italic">...และอีก {batchCount - 5} บัญชี</p>
+                  )}
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isBatchSaving}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 via-mario-orange to-mario-yellow text-slate-950 font-bold shadow-lg hover:opacity-95 transition-all text-xs disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>{isBatchSaving ? 'กำลังสร้างบัญชี...' : `สร้าง ${batchCount} บัญชีสตาฟทันที`}</span>
               </button>
             </form>
           </div>

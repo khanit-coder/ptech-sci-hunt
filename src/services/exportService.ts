@@ -100,6 +100,34 @@ class ExportService {
     }
   }
 
+  // Export Staff Accounts list
+  async exportStaffAccounts(staffList: any[], format: 'xlsx' | 'csv' = 'xlsx') {
+    const formatted = staffList.map((st, idx) => ({
+      'ลำดับ': idx + 1,
+      'ชื่อผู้ใช้งาน (Username)': st.username || st.email?.split('@')[0] || st.display_name,
+      'หน้าที่ประจำจุด': st.role === 'admin' ? 'ผู้ดูแลระบบ (Admin)' : st.staff_duty === 'booth_staff' ? `ประจำบูธ: ${st.assigned_booth_name || 'บูธกิจกรรม'}` : 'สแกนไอเท็มลับตามจุด',
+      'สิทธิ์ (Role)': st.role,
+      'อีเมลระบบ': st.email,
+      'สถานะ': st.is_active ? 'ACTIVE' : 'INACTIVE',
+    }));
+
+    const filename = `ptech_staff_accounts_${new Date().toISOString().slice(0, 10)}`;
+
+    const ws = XLSX.utils.json_to_sheet(formatted);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Staff Accounts');
+
+    if (format === 'csv') {
+      const csv = XLSX.utils.sheet_to_csv(ws);
+      const blob = new Blob([new Uint8Array([0xef, 0xbb, 0xbf]), csv], { type: 'text/csv;charset=utf-8;' });
+      this.downloadFile(blob, `${filename}.csv`);
+    } else {
+      const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      this.downloadFile(blob, `${filename}.xlsx`);
+    }
+  }
+
   // Export Full System Event Backup Snapshot
   async exportFullEventBackup() {
     const items = await itemService.getAllItems();
