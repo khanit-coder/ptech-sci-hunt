@@ -16,6 +16,9 @@ import {
   CheckCircle2,
   Settings,
   Type,
+  Shuffle,
+  Sparkles,
+  ArrowUpDown,
 } from 'lucide-react';
 
 // ── Booth Form ────────────────────────────────────────────────────
@@ -173,10 +176,68 @@ export const BoothManager: React.FC<Props> = ({ onRefresh }) => {
   const handleSaveWord = async () => {
     if (!wordDraft.trim()) return;
     soundManager.playClick();
-    // Use dashboardService.updateSettings for event_settings
     await dashboardService.updateSettings({ target_word: wordDraft.trim().toUpperCase() } as any);
     setEditingWord(false);
     await loadData();
+  };
+
+  // 1. Randomize / Shuffle Booth Letters
+  const handleShuffleLetters = async () => {
+    if (booths.length === 0) return;
+    soundManager.playClick();
+    if (!confirm('🎲 คุณต้องการสุ่มสลับตัวอักษรที่แต่ละบูธได้รับใช่หรือไม่?')) return;
+
+    // Create array of available letter positions: 0 .. targetWord.length - 1
+    const availablePositions = Array.from({ length: targetWord.length }, (_, i) => i);
+    
+    // Fisher-Yates shuffle
+    for (let i = availablePositions.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [availablePositions[i], availablePositions[j]] = [availablePositions[j], availablePositions[i]];
+    }
+
+    const updates = booths.map((booth, idx) => {
+      const newPos = availablePositions[idx % availablePositions.length];
+      const newLetter = targetWord[newPos] || 'A';
+      return {
+        id: booth.id,
+        letter: newLetter,
+        letter_position: newPos,
+        sort_order: newPos,
+      };
+    });
+
+    setIsLoading(true);
+    await boothService.updateBoothAssignments(updates);
+    soundManager.playDiscovery();
+    await loadData();
+    onRefresh?.();
+  };
+
+  // 2. Sequential Reset Order (A-Z / Word Order)
+  const handleSequentialLetters = async () => {
+    if (booths.length === 0) return;
+    soundManager.playClick();
+    if (!confirm('🔤 คุณต้องการจัดเรียงตัวอักษรของทุกบูธตามลำดับตัวอักษรของคำเป้าหมาย (ตำแหน่ง 1, 2, 3...) ใช่หรือไม่?')) return;
+
+    const sortedBooths = [...booths].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+
+    const updates = sortedBooths.map((booth, idx) => {
+      const pos = idx % targetWord.length;
+      const letter = targetWord[pos] || 'A';
+      return {
+        id: booth.id,
+        letter,
+        letter_position: pos,
+        sort_order: pos,
+      };
+    });
+
+    setIsLoading(true);
+    await boothService.updateBoothAssignments(updates);
+    soundManager.playDiscovery();
+    await loadData();
+    onRefresh?.();
   };
 
   return (
@@ -195,7 +256,7 @@ export const BoothManager: React.FC<Props> = ({ onRefresh }) => {
               className="px-3 py-1.5 rounded-xl bg-slate-800 text-mario-yellow text-xs font-bold hover:bg-slate-700 flex items-center gap-1.5"
             >
               <Edit2 className="w-3.5 h-3.5" />
-              แก้ไข
+              แก้ไขคำเป้าหมาย
             </button>
           ) : (
             <div className="flex items-center gap-2">
@@ -260,20 +321,48 @@ export const BoothManager: React.FC<Props> = ({ onRefresh }) => {
         </p>
       </div>
 
-      {/* ── Letter Slots Grid ── */}
+      {/* ── Letter Slots Grid & Actions ── */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-mario-orange" />
-            <h3 className="font-game text-[11px] text-mario-yellow">บูทกิจกรรม</h3>
+            <h3 className="font-game text-[11px] text-mario-yellow">รายการบูทกิจกรรม และการจัดวางตัวอักษร</h3>
           </div>
-          <button
-            type="button"
-            onClick={loadData}
-            className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Randomize / Shuffle Letters Button */}
+            <button
+              type="button"
+              onClick={handleShuffleLetters}
+              disabled={booths.length === 0 || isLoading}
+              className="px-3 py-1.5 rounded-xl bg-purple-950/90 border border-purple-500/80 text-purple-200 hover:bg-purple-900 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-40"
+              title="สุ่มสลับตัวอักษรที่แต่ละบูธจะได้รับจากคำเป้าหมาย"
+            >
+              <Shuffle className="w-3.5 h-3.5 text-purple-400" />
+              <span>🎲 สุ่มตัวอักษรทุกบูธ</span>
+            </button>
+
+            {/* Sequential Reset Order Button */}
+            <button
+              type="button"
+              onClick={handleSequentialLetters}
+              disabled={booths.length === 0 || isLoading}
+              className="px-3 py-1.5 rounded-xl bg-blue-950/90 border border-blue-500/80 text-blue-200 hover:bg-blue-900 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-40"
+              title="เรียงตัวอักษรของทุกบูธตามลำดับของคำเป้าหมาย (1, 2, 3...)"
+            >
+              <ArrowUpDown className="w-3.5 h-3.5 text-blue-400" />
+              <span>🔤 เรียงตามลำดับคำ</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={loadData}
+              className="p-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white"
+              title="รีเฟรชข้อมูล"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -376,18 +465,26 @@ export const BoothManager: React.FC<Props> = ({ onRefresh }) => {
             </div>
 
             <div className="space-y-4 text-xs">
-              {/* Letter position (readonly) */}
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-950 border border-slate-800">
-                <div
-                  className="w-10 h-10 rounded-lg flex items-center justify-center font-game text-lg font-black"
-                  style={{ backgroundColor: `${form.color}25`, border: `2px solid ${form.color}60`, color: form.color }}
+              {/* Letter & Position selector */}
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  ตัวอักษร / ตำแหน่งในคำว่า "{targetWord}" <span className="text-mario-red">*</span>
+                </label>
+                <select
+                  value={form.letter_position}
+                  onChange={(e) => {
+                    const pos = parseInt(e.target.value, 10);
+                    const letter = targetWord[pos] || '';
+                    setForm({ ...form, letter_position: pos, letter, sort_order: pos });
+                  }}
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-mario-yellow font-game text-xs focus:outline-none focus:border-mario-orange"
                 >
-                  {form.letter || '?'}
-                </div>
-                <div>
-                  <p className="font-bold text-white">ตัวอักษร: {form.letter}</p>
-                  <p className="text-slate-400">ตำแหน่ง #{form.letter_position + 1} ในคำ "{targetWord}"</p>
-                </div>
+                  {Array.from(targetWord).map((char, pos) => (
+                    <option key={pos} value={pos}>
+                      ตำแหน่ง #{pos + 1}: ตัวอักษร '{char}'
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Name */}

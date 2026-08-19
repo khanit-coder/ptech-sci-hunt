@@ -58,6 +58,40 @@ class BoothService {
     return { success: false, message: 'ไม่ได้เชื่อมต่อฐานข้อมูล' };
   }
 
+  async updateBoothAssignments(updates: { id: string; letter: string; letter_position: number; sort_order?: number }[]): Promise<{ success: boolean; message: string }> {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const promises = updates.map((u) =>
+          supabase
+            .from('booths')
+            .update({
+              letter: u.letter,
+              letter_position: u.letter_position,
+              sort_order: u.sort_order ?? u.letter_position,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', u.id)
+        );
+        await Promise.all(promises);
+        return { success: true, message: 'อัปเดตการจัดวางตัวอักษรบูทสำเร็จ' };
+      } catch (err: any) {
+        return { success: false, message: err.message || 'เกิดข้อผิดพลาดในการบันทึก' };
+      }
+    }
+
+    // Mock update
+    const mocks = this.getMockBooths();
+    updates.forEach((u) => {
+      const b = mocks.find((m) => m.id === u.id);
+      if (b) {
+        b.letter = u.letter;
+        b.letter_position = u.letter_position;
+        b.sort_order = u.sort_order ?? u.letter_position;
+      }
+    });
+    return { success: true, message: 'อัปเดตการจัดวางตัวอักษรบูทสำเร็จ' };
+  }
+
   async deleteBooth(id: string): Promise<{ success: boolean; message: string }> {
     if (isSupabaseConfigured && supabase) {
       const { error } = await supabase.from('booths').delete().eq('id', id);
