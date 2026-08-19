@@ -132,26 +132,32 @@ export const WorldRestoredMeter: React.FC<Props> = ({ stats, isLedMode = false }
         </div>
       </div>
 
-      {/* Energy Progress Bar */}
+      {/* Energy Progress Bar (Thicker & Bold) */}
       <div className="relative z-10 mt-4 sm:mt-5">
-        <div className="flex justify-between items-center text-[11px] sm:text-xs font-mono font-black text-slate-700 mb-1">
-          <span className="flex items-center gap-1.5 text-slate-900 font-bold">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-spin" />
-            DIMENSIONAL ENERGY STABILIZER
+        <div className="flex justify-between items-center text-xs sm:text-sm font-mono font-black text-slate-800 mb-1.5">
+          <span className="flex items-center gap-2 text-slate-900 font-black tracking-wider">
+            <Sparkles className="w-4 h-4 text-amber-500 animate-spin" />
+            <span>DIMENSIONAL ENERGY STABILIZER</span>
           </span>
           <span className="text-green-700 font-mono font-black">
-            {stats.discovered_items} / {stats.total_items} RECOVERED
+            {stats.discovered_items} / {stats.total_items} RECOVERED ({percentage.toFixed(0)}%)
           </span>
         </div>
 
-        <div className="h-5 sm:h-6 w-full bg-slate-100 rounded-xl p-0.5 border-2 border-passport-border relative overflow-hidden shadow-inner">
+        <div className="h-8 sm:h-10 w-full bg-slate-100 rounded-2xl p-1 border-2 border-passport-border relative overflow-hidden shadow-inner">
           <div
-            className="h-full rounded-lg energy-bar-fill transition-all duration-1000 ease-out shadow-xs"
+            className="h-full rounded-xl energy-bar-fill transition-all duration-1000 ease-out shadow-md flex items-center justify-end pr-3"
             style={{ width: `${Math.max(4, percentage)}%` }}
-          />
+          >
+            {percentage > 10 && (
+              <span className="text-[10px] font-mono font-black text-white drop-shadow-md animate-pulse hidden sm:inline">
+                STABILIZING {percentage.toFixed(0)}%
+              </span>
+            )}
+          </div>
 
-          {/* Grid lines */}
-          <div className="absolute inset-0 flex justify-between px-3 sm:px-4 pointer-events-none opacity-30">
+          {/* Segment Tick Grid lines */}
+          <div className="absolute inset-0 flex justify-between px-3 sm:px-4 pointer-events-none opacity-40">
             {[...Array(9)].map((_, i) => (
               <div key={i} className="w-0.5 h-full bg-slate-900/30" />
             ))}
