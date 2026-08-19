@@ -3,6 +3,7 @@ import { Student, BoothCheckin, Discovery, Booth } from '@/types';
 import { studentService } from '@/services/studentService';
 import { boothService } from '@/services/boothService';
 import { discoveryService } from '@/services/discoveryService';
+import { dashboardService } from '@/services/dashboardService';
 import { soundManager } from '@/lib/sound';
 import {
   Trophy,
@@ -67,7 +68,7 @@ export const LuckyDrawModal: React.FC<Props> = ({ isOpen, onClose }) => {
         dashboardService.getSettings(),
       ]);
 
-      const activeBooths = allBooths.filter((b) => b.is_active);
+      const activeBooths = allBooths.filter((b: Booth) => b.is_active);
       const requiredCount = Math.max(activeBooths.length, 1);
 
       const minBoothsFilter = settings.raffle_min_booths ?? 1;
@@ -77,7 +78,7 @@ export const LuckyDrawModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
       // Group check-ins by student_id
       const checkinsByStudent = new Map<string, Set<string>>();
-      allCheckins.forEach((ci) => {
+      allCheckins.forEach((ci: BoothCheckin) => {
         if (!checkinsByStudent.has(ci.student_id)) {
           checkinsByStudent.set(ci.student_id, new Set());
         }
@@ -86,7 +87,7 @@ export const LuckyDrawModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
       // Group confirmed discoveries by student_id
       const discoveriesByStudent = new Map<string, Discovery[]>();
-      allDiscoveries.forEach((d) => {
+      allDiscoveries.forEach((d: Discovery) => {
         if (d.student_id && d.status === 'confirmed') {
           if (!discoveriesByStudent.has(d.student_id)) {
             discoveriesByStudent.set(d.student_id, []);
@@ -97,7 +98,7 @@ export const LuckyDrawModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
       const eligible: EligibleCandidate[] = [];
 
-      allStudents.forEach((st) => {
+      allStudents.forEach((st: Student) => {
         const visitedBooths = checkinsByStudent.get(st.id);
         const visitedCount = visitedBooths ? visitedBooths.size : 0;
 
