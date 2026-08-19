@@ -376,7 +376,7 @@ export const CardPrintDesigner: React.FC<Props> = ({ students, onClose }) => {
     soundManager.playClick();
   };
 
-  // ── Print Portal ───────────────────────────────────────────────────────────
+  // ── Print Portal (Alternating Front -> Back sequence for each sheet) ──────
   const PrintPortal = printOpen ? createPortal(
     <div id="cpd-root-portal" style={{ position: "fixed", inset: 0, zIndex: 999999, background: "#0b0f19", overflowY: "auto" }}>
       <style>{`
@@ -427,11 +427,11 @@ export const CardPrintDesigner: React.FC<Props> = ({ students, onClose }) => {
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
             <span style={{ fontSize: "16px", fontWeight: 800, color: "white" }}>🖨️ ตัวอย่างก่อนพิมพ์ ({printableStudents.length} คน)</span>
             <span style={{ fontSize: "11px", color: "#94a3b8", background: "#1e293b", padding: "3px 10px", borderRadius: "8px" }}>
-              {pages.length} แผ่น • {cfg.paper} {cfg.orient === "portrait" ? "แนวตั้ง" : "แนวนอน"} • {cfg.cols}x{cfg.rows} ช่อง ({cardW.toFixed(0)}x{cardH.toFixed(0)}mm)
+              {cfg.dblSided ? pages.length * 2 : pages.length} หน้ากระดาษ ({pages.length} แผ่น) • {cfg.paper} {cfg.orient === "portrait" ? "แนวตั้ง" : "แนวนอน"} • {cfg.cols}x{cfg.rows} ช่อง ({cardW.toFixed(0)}x{cardH.toFixed(0)}mm)
             </span>
             {cfg.dblSided && (
               <span style={{ fontSize: "11px", color: "#fbbf24", background: "rgba(251,191,36,0.1)", padding: "3px 10px", borderRadius: "8px", border: "1px solid rgba(251,191,36,0.3)" }}>
-                ⚡ Double-sided: {pages.length} หน้าหน้า + {pages.length} หน้าหลัง
+                ⚡ Double-sided: เรียงสลับ หน้า1 → หลัง1 → หน้า2 → หลัง2...
               </span>
             )}
           </div>
@@ -445,69 +445,72 @@ export const CardPrintDesigner: React.FC<Props> = ({ students, onClose }) => {
           </div>
         </div>
 
-        {/* Printable Sheets */}
+        {/* Printable Sheets (Front 1 -> Back 1 -> Front 2 -> Back 2 ...) */}
         <div style={{ padding: "20px 0", display: "flex", flexDirection: "column", alignItems: "center" }}>
           {pages.map((pg, pi) => (
-            <div key={`f${pi}`} className="pg" style={{
-              width: `${paper.w}mm`, height: `${paper.h}mm`,
-              display: "grid",
-              gridTemplateColumns: `repeat(${cfg.cols}, ${cardW}mm)`,
-              gridTemplateRows: `repeat(${cfg.rows}, ${cardH}mm)`,
-              margin: "0 auto 24px",
-              boxShadow: "0 4px 24px rgba(0,0,0,0.4)",
-              overflow: "hidden", flexShrink: 0,
-              background: "white",
-              WebkitPrintColorAdjust: "exact",
-              printColorAdjust: "exact",
-            }}>
-              {Array(perPage).fill(null).map((_, ci) => {
-                const stu = pg[ci];
-                return (
-                  <div key={ci} style={{ width: `${cardW}mm`, height: `${cardH}mm`, position: "relative", overflow: "hidden" }}>
-                    {stu ? renderCard(stu, false, false) : (
-                      <div style={{
-                        width: "100%", height: "100%",
-                        backgroundImage: cfg.bgFront ? `url(${cfg.bgFront})` : undefined,
-                        backgroundSize: "cover", backgroundColor: "#f8fafc",
-                        WebkitPrintColorAdjust: "exact", printColorAdjust: "exact"
-                      }} />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+            <React.Fragment key={`sheet_${pi}`}>
+              {/* Sheet Front */}
+              <div className="pg" style={{
+                width: `${paper.w}mm`, height: `${paper.h}mm`,
+                display: "grid",
+                gridTemplateColumns: `repeat(${cfg.cols}, ${cardW}mm)`,
+                gridTemplateRows: `repeat(${cfg.rows}, ${cardH}mm)`,
+                margin: "0 auto 24px",
+                boxShadow: "0 4px 24px rgba(0,0,0,0.4)",
+                overflow: "hidden", flexShrink: 0,
+                background: "white",
+                WebkitPrintColorAdjust: "exact",
+                printColorAdjust: "exact",
+              }}>
+                {Array(perPage).fill(null).map((_, ci) => {
+                  const stu = pg[ci];
+                  return (
+                    <div key={ci} style={{ width: `${cardW}mm`, height: `${cardH}mm`, position: "relative", overflow: "hidden" }}>
+                      {stu ? renderCard(stu, false, false) : (
+                        <div style={{
+                          width: "100%", height: "100%",
+                          backgroundImage: cfg.bgFront ? `url(${cfg.bgFront})` : undefined,
+                          backgroundSize: "cover", backgroundColor: "#f8fafc",
+                          WebkitPrintColorAdjust: "exact", printColorAdjust: "exact"
+                        }} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
 
-          {/* Double-sided Back Pages */}
-          {cfg.dblSided && pages.map((pg, pi) => (
-            <div key={`b${pi}`} className="pg" style={{
-              width: `${paper.w}mm`, height: `${paper.h}mm`,
-              display: "grid",
-              gridTemplateColumns: `repeat(${cfg.cols}, ${cardW}mm)`,
-              gridTemplateRows: `repeat(${cfg.rows}, ${cardH}mm)`,
-              margin: "0 auto 24px",
-              boxShadow: "0 4px 24px rgba(0,0,0,0.4)",
-              overflow: "hidden", flexShrink: 0,
-              background: "white",
-              WebkitPrintColorAdjust: "exact",
-              printColorAdjust: "exact",
-            }}>
-              {Array(perPage).fill(null).map((_, ci) => {
-                const stu = pg[ci];
-                return (
-                  <div key={ci} style={{ width: `${cardW}mm`, height: `${cardH}mm`, position: "relative", overflow: "hidden" }}>
-                    {stu ? renderCard(stu, false, true) : (
-                      <div style={{
-                        width: "100%", height: "100%",
-                        backgroundImage: cfg.bgBack ? `url(${cfg.bgBack})` : undefined,
-                        backgroundSize: "cover", backgroundColor: "#f1f5f9",
-                        WebkitPrintColorAdjust: "exact", printColorAdjust: "exact"
-                      }} />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+              {/* Sheet Back (Immediately follows this Sheet's Front) */}
+              {cfg.dblSided && (
+                <div className="pg" style={{
+                  width: `${paper.w}mm`, height: `${paper.h}mm`,
+                  display: "grid",
+                  gridTemplateColumns: `repeat(${cfg.cols}, ${cardW}mm)`,
+                  gridTemplateRows: `repeat(${cfg.rows}, ${cardH}mm)`,
+                  margin: "0 auto 24px",
+                  boxShadow: "0 4px 24px rgba(0,0,0,0.4)",
+                  overflow: "hidden", flexShrink: 0,
+                  background: "white",
+                  WebkitPrintColorAdjust: "exact",
+                  printColorAdjust: "exact",
+                }}>
+                  {Array(perPage).fill(null).map((_, ci) => {
+                    const stu = pg[ci];
+                    return (
+                      <div key={ci} style={{ width: `${cardW}mm`, height: `${cardH}mm`, position: "relative", overflow: "hidden" }}>
+                        {stu ? renderCard(stu, false, true) : (
+                          <div style={{
+                            width: "100%", height: "100%",
+                            backgroundImage: cfg.bgBack ? `url(${cfg.bgBack})` : undefined,
+                            backgroundSize: "cover", backgroundColor: "#f1f5f9",
+                            WebkitPrintColorAdjust: "exact", printColorAdjust: "exact"
+                          }} />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </React.Fragment>
           ))}
         </div>
       </div>
@@ -621,7 +624,7 @@ export const CardPrintDesigner: React.FC<Props> = ({ students, onClose }) => {
             <button
               onClick={() => setShowSaveModal(true)}
               style={{ background: "#0369a1", color: "white", border: "1px solid #0284c7", borderRadius: "8px", padding: "7px 12px", fontSize: "12px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
-              title="บันทึกเลย์เอาต์นี้ไว้ออนไลน์ใน Supabase"
+              title="บันทึกเลย์เอาต์นี้ไว้ออนไลนใน Supabase"
             >
               <Cloud size={14} /> บันทึกเท็มเพลตออนไลน์
             </button>
