@@ -3,7 +3,6 @@ import { Student, BoothCheckin, Discovery, Booth } from '@/types';
 import { studentService } from '@/services/studentService';
 import { boothService } from '@/services/boothService';
 import { discoveryService } from '@/services/discoveryService';
-import { dashboardService } from '@/services/dashboardService';
 import { soundManager } from '@/lib/sound';
 import {
   Trophy,
@@ -17,16 +16,21 @@ import {
   Users,
   ShieldCheck,
   Zap,
+  Sliders,
+  Percent,
 } from 'lucide-react';
 
 export interface EligibleCandidate {
   student: Student;
   boothsVisitedCount: number;
+  requiredBoothsCount: number;
+  completionPercent: number;
   itemDiscoveriesCount: number;
   discoveredItemNames: string[];
   baseWeight: number;
   bonusWeight: number;
   finalWeight: number;
+  winChancePercent: number;
 }
 
 interface Props {
@@ -37,8 +41,12 @@ interface Props {
 export const LuckyDrawModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [candidates, setCandidates] = useState<EligibleCandidate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Drawing settings
   const [enableItemBonus, setEnableItemBonus] = useState(true);
   const [bonusPercent, setBonusPercent] = useState(100); // default +100% = 2x chance
+  const [minBoothsFilter, setMinBoothsFilter] = useState<number>(1); // 1 = at least 1 booth (everyone included)
+  const [weightMode, setWeightMode] = useState<'progressive' | 'linear' | 'equal'>('progressive');
 
   const [isRolling, setIsRolling] = useState(false);
   const [rollingCandidate, setRollingCandidate] = useState<EligibleCandidate | null>(null);
@@ -47,7 +55,7 @@ export const LuckyDrawModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
   const animTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load eligible candidates (students who have completed ALL active booth checkins)
+  // Load candidates & calculate weights based on collected letters
   const loadCandidates = async () => {
     setIsLoading(true);
     try {
@@ -87,26 +95,57 @@ export const LuckyDrawModal: React.FC<Props> = ({ isOpen, onClose }) => {
         const visitedBooths = checkinsByStudent.get(st.id);
         const visitedCount = visitedBooths ? visitedBooths.size : 0;
 
-        // Check if student completed ALL required booth checkins
-        if (visitedCount >= requiredCount) {
+        // Include students meeting minimum booth threshold (default: >= 1 booth)
+        if (visitedCount >= minBoothsFilter) {
           const stDiscoveries = discoveriesByStudent.get(st.id) || [];
           const itemsCount = stDiscoveries.length;
           const itemNames = stDiscoveries.map((d) => d.item?.name || d.notes || 'Secret Item');
 
+          const ratio = Math.min(1.0, visitedCount / requiredCount);
+          const completionPct = Math.round(ratio * 100);
+
+          // Calculate base weight:
+          // 'progressive': ratio^2.5 -> 100% = 1.0, 80% = 0.57, 60% = 0.28, 40% = 0.10, 20% = 0.02
+          // 'linear': ratio -> 100% = 1.0, 80% = 0.8, 60% = 0.6, 40% = 0.4, 20% = 0.2
+          // 'equal': 1.0 -> equal weight
+          let baseWeight = 1.0;
+          if (weightMode === 'progressive') {
+            baseWeight = Math.pow(ratio, 2.5);
+          } else if (weightMode === 'linear') {
+            baseWeight = ratio;
+          } else {
+            baseWeight = 1.0;
+          }
+
           const hasItems = itemsCount > 0;
           const bonusMultiplier = hasItems && enableItemBonus ? 1 + bonusPercent / 100 : 1.0;
+          const finalWeight = baseWeight * bonusMultiplier;
 
           eligible.push({
             student: st,
             boothsVisitedCount: visitedCount,
+            requiredBoothsCount: requiredCount,
+            completionPercent: completionPct,
             itemDiscoveriesCount: itemsCount,
             discoveredItemNames: itemNames,
-            baseWeight: 1.0,
-            bonusWeight: bonusMultiplier - 1.0,
-            finalWeight: bonusMultiplier,
+            baseWeight,
+            bonusWeight: finalWeight - baseWeight,
+            finalWeight,
+            winChancePercent: 0,
           });
         }
       });
+
+      // Calculate total weight of candidates
+      const totalWeight = eligible.reduce((sum, c) => sum + c.finalWeight, 0);
+      if (totalWeight > 0) {
+        eligible.forEach((c) => {
+          c.winChancePercent = (c.finalWeight / totalWeight) * 100;
+        });
+      }
+
+      // Sort by completion percent descending
+      eligible.sort((a, b) => b.completionPercent - a.completionPercent || b.finalWeight - a.finalWeight);
 
       setCandidates(eligible);
     } finally {
@@ -122,7 +161,7 @@ export const LuckyDrawModal: React.FC<Props> = ({ isOpen, onClose }) => {
       setIsRolling(false);
       setWinner(null);
     }
-  }, [isOpen, enableItemBonus, bonusPercent]);
+  }, [isOpen, enableItemBonus, bonusPercent, minBoothsFilter, weightMode]);
 
   if (!isOpen) return null;
 
@@ -132,6 +171,10 @@ export const LuckyDrawModal: React.FC<Props> = ({ isOpen, onClose }) => {
   );
 
   const pool = availableCandidates.length > 0 ? availableCandidates : candidates;
+
+  // Statistics breakdown
+  const full100Count = candidates.filter((c) => c.completionPercent === 100).length;
+  const partialCount = candidates.filter((c) => c.completionPercent < 100).length;
 
   const handleStartDraw = () => {
     if (pool.length === 0 || isRolling) return;
@@ -188,12 +231,14 @@ export const LuckyDrawModal: React.FC<Props> = ({ isOpen, onClose }) => {
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-mario-yellow/20 border-2 border-mario-yellow/70 flex items-center justify-center shadow-neon-yellow">
+            <div className="w-12 h-12 rounded-2xl bg-mario-yellow/20 border-2 border-mario-yellow/70 flex items-center justify-center shadow-neon-yellow shrink-0">
               <Trophy className="w-7 h-7 text-mario-yellow" />
             </div>
             <div>
               <h3 className="font-game text-base sm:text-lg text-mario-yellow tracking-wider">🎰 LUCKY DRAW GRAND PRIZE</h3>
-              <p className="text-xs sm:text-sm text-slate-300">สุ่มผู้โชคดีรางวัลใหญ่ (สำหรับนักเรียนที่สะสมตัวอักษรครบทุกซุ้ม 100%)</p>
+              <p className="text-xs sm:text-sm text-slate-300">
+                สุ่มผู้โชคดีรางวัลใหญ่ (อิงจากจำนวนตัวอักษรที่สะสม — ยิ่งสะสมครบ โอกาสยิ่งสูงขึ้น!)
+              </p>
             </div>
           </div>
 
@@ -208,8 +253,45 @@ export const LuckyDrawModal: React.FC<Props> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Configuration Options */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4">
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Weight Scaling Mode Selector */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                <Sliders className="w-3.5 h-3.5 text-mario-yellow" />
+                <span>รูปแบบการคำนวณโอกาสสะสมตัวอักษร:</span>
+              </label>
+              <select
+                value={weightMode}
+                onChange={(e) => setWeightMode(e.target.value as any)}
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 font-medium focus:ring-1 focus:ring-mario-yellow"
+              >
+                <option value="progressive">🔥 ทวีคูณความขยัน (สะสมครบ 100% โอกาสสูงกว่ามาก) [แนะนำ]</option>
+                <option value="linear">📊 ตามสัดส่วนตัวอักษร (100%, 80%, 60%, 40%...)</option>
+                <option value="equal">⚖️ สิทธิ์เท่ากันทุกคน (สะสมอย่างน้อย 1 ซุ้ม)</option>
+              </select>
+            </div>
+
+            {/* Min Booths Threshold Selector */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-mario-orange" />
+                <span>เงื่อนไขขั้นต่ำในการเข้าร่วมสุ่ม:</span>
+              </label>
+              <select
+                value={minBoothsFilter}
+                onChange={(e) => setMinBoothsFilter(Number(e.target.value))}
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 font-medium focus:ring-1 focus:ring-mario-yellow"
+              >
+                <option value={1}>🌟 สะสมอย่างน้อย 1 ซุ้มขึ้นไป (เปิดโอกาสให้ทุกคน)</option>
+                <option value={3}>⭐ สะสมตั้งแต่ 50% ขึ้นไป</option>
+                <option value={5}>🏆 สะสมครบ 100% เท่านั้น</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-slate-800/80">
             {/* Item Bonus Checkbox */}
             <label className="flex items-center gap-2.5 cursor-pointer text-xs sm:text-sm font-bold text-slate-200">
               <input
@@ -220,7 +302,7 @@ export const LuckyDrawModal: React.FC<Props> = ({ isOpen, onClose }) => {
               />
               <span className="flex items-center gap-1.5">
                 <Star className="w-4 h-4 text-mario-yellow fill-mario-yellow" />
-                <span>เพิ่มโอกาสชนะสุ่มสำหรับผู้ที่ค้นพบไอเท็มลับ</span>
+                <span>เพิ่มโบนัสโอกาสชนะสำหรับผู้ที่ค้นพบไอเท็มลับ</span>
               </span>
             </label>
 
@@ -247,11 +329,21 @@ export const LuckyDrawModal: React.FC<Props> = ({ isOpen, onClose }) => {
           </div>
 
           {/* Stats Bar */}
-          <div className="flex items-center justify-between text-xs font-mono text-slate-400 pt-2 border-t border-slate-800/80">
-            <span className="flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-mario-orange" />
-              <span>ผู้มีสิทธิ์ลุ้นรางวัล: <strong className="text-mario-yellow font-bold text-sm">{candidates.length} คน</strong></span>
-            </span>
+          <div className="flex flex-wrap items-center justify-between text-xs font-mono text-slate-400 pt-2 border-t border-slate-800/80 gap-2">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="flex items-center gap-1.5 text-slate-300">
+                <Users className="w-4 h-4 text-mario-orange" />
+                <span>ผู้มีสิทธิ์ลุ้นรางวัล: <strong className="text-mario-yellow font-bold text-sm">{candidates.length} คน</strong></span>
+              </span>
+              <span className="px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-800 text-[11px]">
+                ครบ 100%: {full100Count} คน
+              </span>
+              {partialCount > 0 && (
+                <span className="px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800 text-[11px]">
+                  สะสมบางส่วน: {partialCount} คน
+                </span>
+              )}
+            </div>
 
             {drawnHistory.length > 0 && (
               <span className="text-slate-400">
@@ -275,8 +367,8 @@ export const LuckyDrawModal: React.FC<Props> = ({ isOpen, onClose }) => {
           ) : candidates.length === 0 ? (
             <div className="space-y-3">
               <Trophy className="w-12 h-12 text-slate-600 mx-auto" />
-              <p className="text-slate-300 text-sm font-bold">ยังไม่มีนักเรียนสะสมตัวอักษรครบทุกซุ้มกิจกรรม</p>
-              <p className="text-slate-500 text-xs">ให้นักเรียนสะสมตัวอักษรให้ครบ 100% เพื่อลุ้นรางวัลใหญ่</p>
+              <p className="text-slate-300 text-sm font-bold">ไม่พบนักเรียนที่มีสิทธิ์ตามเงื่อนไขที่กำหนด</p>
+              <p className="text-slate-500 text-xs">โปรดปรับเปลี่ยนเงื่อนไขขั้นต่ำด้านบนเพื่อเปิดโอกาสให้ผู้เข้าร่วมงาน</p>
             </div>
           ) : (
             <div className="space-y-3 z-10 w-full">
@@ -315,13 +407,18 @@ export const LuckyDrawModal: React.FC<Props> = ({ isOpen, onClose }) => {
                   <div className="flex items-center justify-center gap-3 pt-3 flex-wrap text-xs sm:text-sm">
                     <span className="px-4 py-1.5 rounded-xl bg-emerald-950/90 border border-emerald-500/80 text-emerald-300 font-bold flex items-center gap-1.5 shadow-sm">
                       <ShieldCheck className="w-4 h-4" />
-                      สะสมครบ {winner.boothsVisitedCount} ซุ้ม (100%)
+                      สะสมตัวอักษร {winner.boothsVisitedCount}/{winner.requiredBoothsCount} ซุ้ม ({winner.completionPercent}%)
+                    </span>
+
+                    <span className="px-4 py-1.5 rounded-xl bg-sky-950/90 border border-sky-500/80 text-sky-300 font-bold flex items-center gap-1.5 shadow-sm font-mono">
+                      <Percent className="w-4 h-4" />
+                      โอกาสถูกสุ่มในรอบนี้: {winner.winChancePercent.toFixed(2)}%
                     </span>
 
                     {winner.itemDiscoveriesCount > 0 && (
                       <span className="px-4 py-1.5 rounded-xl bg-amber-950/90 border border-amber-500/80 text-amber-300 font-bold flex items-center gap-1.5 shadow-sm">
                         <Star className="w-4 h-4 fill-amber-400" />
-                        พบไอเท็มลับ {winner.itemDiscoveriesCount} ชิ้น (+{bonusPercent}% โบนัสโอกาส)
+                        พบไอเท็มลับ {winner.itemDiscoveriesCount} ชิ้น (+{bonusPercent}% โบนัส)
                       </span>
                     )}
                   </div>
