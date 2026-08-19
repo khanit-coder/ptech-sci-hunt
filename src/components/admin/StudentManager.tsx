@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Student } from '@/types';
 import { studentService } from '@/services/studentService';
 import { exportService } from '@/services/exportService';
@@ -17,7 +17,12 @@ import {
   X,
   UserPlus,
   QrCode,
-  Printer
+  Printer,
+  Building2,
+  GraduationCap,
+  Filter,
+  ArrowUpDown,
+  RotateCcw,
 } from 'lucide-react';
 
 interface Props {
@@ -27,10 +32,24 @@ interface Props {
 }
 
 export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImportWizard }) => {
+  // Sub-tabs: 'internal' | 'external' | 'all'
+  const [subTab, setSubTab] = useState<'internal' | 'external' | 'all'>('internal');
+
+  // Search & Filter & Sort state
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterClass, setFilterClass] = useState<string>('all');
+  const [filterDepartment, setFilterDepartment] = useState<string>('all');
+  const [filterSchool, setFilterSchool] = useState<string>('all');
+  
+  const [sortBy, setSortBy] = useState<'student_code' | 'full_name' | 'class_name' | 'department' | 'school_name' | 'created_at'>('student_code');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // Modal states
   const [isAdding, setIsAdding] = useState(false);
   const [isRegisterExtOpen, setIsRegisterExtOpen] = useState(false);
   const [isQrSheetOpen, setIsQrSheetOpen] = useState(false);
+
+  // Form states for single student addition
   const [formCode, setFormCode] = useState('');
   const [formFirst, setFormFirst] = useState('');
   const [formLast, setFormLast] = useState('');
@@ -39,19 +58,84 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
   const [formDept, setFormDept] = useState('');
   const [formPhone, setFormPhone] = useState('');
 
-  const filteredStudents = students.filter((s) => {
-    const q = searchQuery.toLowerCase();
-    return (
-      s.student_code.toLowerCase().includes(q) ||
-      s.full_name.toLowerCase().includes(q) ||
-      (s.nickname && s.nickname.toLowerCase().includes(q)) ||
-      (s.school_name && s.school_name.toLowerCase().includes(q)) ||
-      (s.phone && s.phone.includes(q)) ||
-      (s.qr_token && s.qr_token.toLowerCase().includes(q)) ||
-      s.department?.toLowerCase().includes(q) ||
-      s.class_name?.toLowerCase().includes(q)
-    );
-  });
+  // Count internal vs external
+  const internalCount = useMemo(() => students.filter((s) => s.student_status !== 'external').length, [students]);
+  const externalCount = useMemo(() => students.filter((s) => s.student_status === 'external').length, [students]);
+
+  // Extract unique options for dropdown filters
+  const classList = useMemo(() => {
+    const set = new Set<string>();
+    students.forEach((s) => {
+      if (s.class_name) set.add(s.class_name);
+      if (s.level) set.add(s.level);
+    });
+    return Array.from(set).sort();
+  }, [students]);
+
+  const deptList = useMemo(() => {
+    const set = new Set<string>();
+    students.forEach((s) => {
+      if (s.department) set.add(s.department);
+    });
+    return Array.from(set).sort();
+  }, [students]);
+
+  const schoolList = useMemo(() => {
+    const set = new Set<string>();
+    students.forEach((s) => {
+      if (s.school_name) set.add(s.school_name);
+    });
+    return Array.from(set).sort();
+  }, [students]);
+
+  // 1. Sub-tab filter
+  const tabFiltered = useMemo(() => {
+    return students.filter((s) => {
+      if (subTab === 'internal') return s.student_status !== 'external';
+      if (subTab === 'external') return s.student_status === 'external';
+      return true;
+    });
+  }, [students, subTab]);
+
+  // 2. Multi-field search & category filters
+  const filteredStudents = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    return tabFiltered.filter((s) => {
+      const matchesQuery =
+        !q ||
+        s.student_code.toLowerCase().includes(q) ||
+        s.full_name.toLowerCase().includes(q) ||
+        (s.nickname && s.nickname.toLowerCase().includes(q)) ||
+        (s.school_name && s.school_name.toLowerCase().includes(q)) ||
+        (s.phone && s.phone.includes(q)) ||
+        (s.qr_token && s.qr_token.toLowerCase().includes(q)) ||
+        (s.department && s.department.toLowerCase().includes(q)) ||
+        (s.class_name && s.class_name.toLowerCase().includes(q));
+
+      const matchesClass =
+        filterClass === 'all' || s.class_name === filterClass || s.level === filterClass;
+      const matchesDept = filterDepartment === 'all' || s.department === filterDepartment;
+      const matchesSchool = filterSchool === 'all' || s.school_name === filterSchool;
+
+      return matchesQuery && matchesClass && matchesDept && matchesSchool;
+    });
+  }, [tabFiltered, searchQuery, filterClass, filterDepartment, filterSchool]);
+
+  // 3. Sorting logic
+  const sortedStudents = useMemo(() => {
+    return [...filteredStudents].sort((a, b) => {
+      let valA = (a[sortBy] || '').toString().toLowerCase();
+      let valB = (b[sortBy] || '').toString().toLowerCase();
+
+      if (sortBy === 'full_name') {
+        valA = a.full_name || '';
+        valB = b.full_name || '';
+      }
+
+      const comparison = valA.localeCompare(valB, 'th', { numeric: true });
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+  }, [filteredStudents, sortBy, sortOrder]);
 
   const handleDeleteStudent = async (s: Student) => {
     if (confirm(`คุณแน่ใจหรือไม่ที่จะลบรายชื่อนักเรียน "${s.full_name}" (รหัส: ${s.student_code})?`)) {
@@ -121,24 +205,52 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       
-      {/* Top Actions & Search Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-        
-        {/* Search */}
-        <div className="relative flex-1 max-w-sm">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="ค้นหารหัสนักเรียน, ชื่อ, โรงเรียน, เบอร์โทร..."
-            className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-mario-orange"
-          />
+      {/* ── Sub-Tabs Switcher (นักเรียนภายใน / นักเรียนภายนอก / ทั้งหมด) ── */}
+      <div className="flex items-center justify-between flex-wrap gap-3 pb-2 border-b border-slate-800">
+        <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-950 border border-slate-800">
+          <button
+            type="button"
+            onClick={() => { soundManager.playClick(); setSubTab('internal'); }}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              subTab === 'internal'
+                ? 'bg-mario-blue text-white shadow-neon-blue'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" />
+            <span>🏢 นักเรียนภายใน ({internalCount})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { soundManager.playClick(); setSubTab('external'); }}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              subTab === 'external'
+                ? 'bg-purple-600 text-white shadow-neon-purple'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+            }`}
+          >
+            <GraduationCap className="w-3.5 h-3.5" />
+            <span>🏫 นักเรียนภายนอก ({externalCount})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { soundManager.playClick(); setSubTab('all'); }}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              subTab === 'all'
+                ? 'bg-slate-800 text-mario-yellow border border-slate-700'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span>👥 ทั้งหมด ({students.length})</span>
+          </button>
         </div>
 
-        {/* Buttons */}
+        {/* Header Action Buttons */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Print Student QR Sheet */}
           <button
@@ -148,10 +260,10 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
               setIsQrSheetOpen(true);
             }}
             className="px-3.5 py-2 rounded-xl bg-blue-950/80 border border-blue-500/80 text-blue-300 hover:bg-blue-900 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
-            title={`พิมพ์ QR Code นักเรียน (${filteredStudents.length} คน)`}
+            title={`พิมพ์ QR Code นักเรียน (${sortedStudents.length} คน)`}
           >
             <Printer className="w-3.5 h-3.5 text-blue-400" />
-            <span>พิมพ์ QR นักเรียน ({filteredStudents.length})</span>
+            <span>พิมพ์ QR นักเรียน ({sortedStudents.length})</span>
           </button>
 
           {/* Register External QR Button */}
@@ -222,6 +334,117 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
         </div>
       </div>
 
+      {/* ── Search & Filter & Sort Control Toolbar ── */}
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs shadow-md">
+        
+        {/* Search Input */}
+        <div className="relative flex-1 min-w-[240px]">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="ค้นหารหัสนักเรียน, ชื่อ, โรงเรียน, เบอร์โทร..."
+            className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-mario-orange"
+          />
+        </div>
+
+        {/* Dropdown Filters */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[11px] font-mono font-bold text-slate-400 flex items-center gap-1">
+            <Filter className="w-3.5 h-3.5 text-mario-orange" /> ตัวกรอง:
+          </span>
+
+          {/* Class / Level Filter */}
+          {classList.length > 0 && (
+            <select
+              value={filterClass}
+              onChange={(e) => setFilterClass(e.target.value)}
+              className="px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-medium focus:outline-none text-xs"
+            >
+              <option value="all">ทุกระดับชั้น/ห้องเรียน</option>
+              {classList.map((cls) => (
+                <option key={cls} value={cls}>{cls}</option>
+              ))}
+            </select>
+          )}
+
+          {/* Department Filter */}
+          {deptList.length > 0 && (
+            <select
+              value={filterDepartment}
+              onChange={(e) => setFilterDepartment(e.target.value)}
+              className="px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-medium focus:outline-none text-xs"
+            >
+              <option value="all">ทุกแผนกวิชา</option>
+              {deptList.map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+          )}
+
+          {/* School Filter */}
+          {schoolList.length > 0 && (
+            <select
+              value={filterSchool}
+              onChange={(e) => setFilterSchool(e.target.value)}
+              className="px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-medium focus:outline-none text-xs"
+            >
+              <option value="all">ทุกโรงเรียน/สถานศึกษา</option>
+              {schoolList.map((sch) => (
+                <option key={sch} value={sch}>{sch}</option>
+              ))}
+            </select>
+          )}
+
+          {(filterClass !== 'all' || filterDepartment !== 'all' || filterSchool !== 'all' || searchQuery.trim() !== '') && (
+            <button
+              type="button"
+              onClick={() => {
+                setFilterClass('all');
+                setFilterDepartment('all');
+                setFilterSchool('all');
+                setSearchQuery('');
+              }}
+              className="px-2.5 py-1.5 rounded-xl bg-red-950/80 border border-red-700 text-red-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1"
+              title="ล้างตัวกรองทั้งหมด"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>ล้างตัวกรอง</span>
+            </button>
+          )}
+        </div>
+
+        {/* Sorting Controls */}
+        <div className="flex items-center gap-2 shrink-0 border-t md:border-t-0 border-slate-800 pt-2 md:pt-0">
+          <span className="text-[11px] font-mono font-bold text-slate-400 flex items-center gap-1">
+            <ArrowUpDown className="w-3.5 h-3.5 text-mario-yellow" /> เรียงลำดับ:
+          </span>
+
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-medium focus:outline-none text-xs"
+          >
+            <option value="student_code">รหัสนักเรียน</option>
+            <option value="full_name">ชื่อ - นามสกุล</option>
+            <option value="class_name">ชั้นเรียน / ห้อง</option>
+            <option value="department">แผนกวิชา</option>
+            <option value="school_name">โรงเรียน</option>
+            <option value="created_at">วันที่ลงทะเบียน</option>
+          </select>
+
+          <button
+            type="button"
+            onClick={() => setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
+            className="px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-200 hover:text-white font-mono font-bold text-xs flex items-center gap-1 transition-all"
+            title="สลับลำดับ น้อยไปมาก / มากไปน้อย"
+          >
+            <span>{sortOrder === 'asc' ? '⬆️ น้อยไปมาก' : '⬇️ มากไปน้อย'}</span>
+          </button>
+        </div>
+      </div>
+
       {/* Students Data Table */}
       <div className="bg-slate-900/80 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
@@ -239,14 +462,16 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
             </thead>
 
             <tbody className="divide-y divide-slate-800/60 font-medium">
-              {filteredStudents.length === 0 ? (
+              {sortedStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-500">
-                    ไม่พบข้อมูลนักเรียน
+                  <td colSpan={7} className="py-12 text-center text-slate-500 space-y-2">
+                    <Users className="w-8 h-8 text-slate-600 mx-auto" />
+                    <p className="font-bold">ไม่พบข้อมูลนักเรียนตามเงื่อนไขที่เลือก</p>
+                    <p className="text-[11px] text-slate-600">ลองเปลี่ยนแท็บ ค้นหาใหม่ หรือกดล้างตัวกรอง</p>
                   </td>
                 </tr>
               ) : (
-                filteredStudents.map((s) => (
+                sortedStudents.map((s) => (
                   <tr key={s.id} className="hover:bg-slate-800/40 transition-colors">
                     <td className="py-3 px-4 font-mono font-bold text-mario-yellow">
                       {s.student_code}
