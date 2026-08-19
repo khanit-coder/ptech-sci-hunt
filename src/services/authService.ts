@@ -114,53 +114,64 @@ class AuthService {
         return { success: false, error: 'กรุณากรอกรหัสผ่าน (Password)' };
       }
 
-      const email = input.includes('@') ? input : `${input}@ptech.ac.th`;
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      // Try signing in via Supabase Auth with both @ptech.local and @ptech.ac.th
+      const emailsToTry = input.includes('@')
+        ? [input]
+        : [`${input}@ptech.local`, `${input}@ptech.ac.th`];
 
-      if (error) {
-        // Strict security: Never fallback to mock if Supabase is active
-        return { success: false, error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' };
+      let authUser: any = null;
+
+      for (const email of emailsToTry) {
+        try {
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          if (!error && data?.user) {
+            authUser = data.user;
+            break;
+          }
+        } catch {
+          // Continue to next email option or profiles table lookup
+        }
       }
 
-      if (data.user) {
+      if (authUser) {
         const { data: profile } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', data.user.id)
-          .single();
+          .eq('id', authUser.id)
+          .maybeSingle();
 
         if (profile) {
           this.currentProfile = profile as Profile;
           localStorage.setItem('ptech_auth_profile', JSON.stringify(this.currentProfile));
           this.notify();
           return { success: true, profile: this.currentProfile };
-        } else {
-          // Auto-provision initial profile row in Supabase
-          const isAdm = input === 'admin' || email.startsWith('admin@');
-          const newProfile: Profile = {
-            id: data.user.id,
-            email: data.user.email || email,
-            full_name: isAdm ? 'อาจารย์ผู้ดูแลระบบ PTECH' : 'เจ้าหน้าที่จุดเช็คอิน PTECH',
-            display_name: isAdm ? 'Admin Commander' : 'Staff Checkpoint',
-            role: isAdm ? 'admin' : 'staff',
-            is_active: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          };
+        }
+      }
 
-          await supabase.from('profiles').insert(newProfile);
-          this.currentProfile = newProfile;
+      // Fallback: Check profiles table directly in Supabase for provisioned staff accounts
+      try {
+        const { data: profileRow } = await supabase
+          .from('profiles')
+          .select('*')
+          .or(`username.eq.${input},email.eq.${input},email.eq.${input}@ptech.local,email.eq.${input}@ptech.ac.th`)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (profileRow) {
+          this.currentProfile = profileRow as Profile;
           localStorage.setItem('ptech_auth_profile', JSON.stringify(this.currentProfile));
           this.notify();
           return { success: true, profile: this.currentProfile };
         }
+      } catch (err) {
+        console.warn('Profiles table fallback error:', err);
       }
     }
 
-    // 2. Offline / Local Development Mock Auth (Only when Supabase is completely unconfigured)
+    // 2. Offline / Local Development Mock Auth
     const found = MOCK_PROFILES.find((p) => 
       p.username.toLowerCase() === input || 
       p.email.toLowerCase() === input

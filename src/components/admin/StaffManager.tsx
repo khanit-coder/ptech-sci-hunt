@@ -4,7 +4,7 @@ import { adminService } from '@/services/adminService';
 import { boothService } from '@/services/boothService';
 import { exportService } from '@/services/exportService';
 import { soundManager } from '@/lib/sound';
-import { UserCheck, ShieldCheck, UserX, Key, Plus, Lock, X, Trash2, MapPin, Scan, Sparkles, Download, Printer } from 'lucide-react';
+import { UserCheck, ShieldCheck, UserX, Key, Plus, Lock, X, Trash2, MapPin, Scan, Sparkles, Download, Printer, Eye, EyeOff } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 interface Props {
@@ -21,6 +21,10 @@ export const StaffManager: React.FC<Props> = ({ staffList, onRefresh }) => {
   const [assignedBoothId, setAssignedBoothId] = useState<string>('');
   const [booths, setBooths] = useState<Booth[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Password visibility states
+  const [revealedPasswords, setRevealedPasswords] = useState<Record<string, boolean>>({});
+  const [showAllPasswords, setShowAllPasswords] = useState(false);
 
   // Batch staff creator state
   const [isBatchOpen, setIsBatchOpen] = useState(false);
@@ -40,6 +44,17 @@ export const StaffManager: React.FC<Props> = ({ staffList, onRefresh }) => {
       }
     });
   }, []);
+
+  const getDisplayPassword = (st: Profile): string => {
+    if (st.password) return st.password;
+    const uName = (st.username || st.email?.split('@')[0] || '').toLowerCase();
+    const match = uName.match(/^staff(\d+)$/);
+    if (match) {
+      return `World${match[1]}`;
+    }
+    if (uName === 'admin') return 'admin1234';
+    return 'World01 (ค่าเริ่มต้น)';
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,6 +149,24 @@ export const StaffManager: React.FC<Props> = ({ staffList, onRefresh }) => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Toggle All Passwords Visibility */}
+          <button
+            type="button"
+            onClick={() => {
+              soundManager.playClick();
+              setShowAllPasswords(!showAllPasswords);
+            }}
+            className={`px-3 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm ${
+              showAllPasswords
+                ? 'bg-amber-950/80 border-amber-500/80 text-amber-300 hover:bg-amber-900'
+                : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
+            }`}
+            title={showAllPasswords ? 'ซ่อนรหัสผ่านสตาฟทั้งหมด' : 'แสดงรหัสผ่านสตาฟทั้งหมด'}
+          >
+            {showAllPasswords ? <EyeOff className="w-3.5 h-3.5 text-amber-400" /> : <Eye className="w-3.5 h-3.5 text-mario-yellow" />}
+            <span>{showAllPasswords ? '🙈 ซ่อนรหัสผ่านทั้งหมด' : '👁️ แสดงรหัสผ่านทั้งหมด'}</span>
+          </button>
+
           {/* Export Staff List */}
           <button
             type="button"
@@ -184,6 +217,7 @@ export const StaffManager: React.FC<Props> = ({ staffList, onRefresh }) => {
             <thead className="bg-slate-950/80 text-slate-400 font-mono uppercase border-b border-slate-800">
               <tr>
                 <th className="py-3.5 px-4">ชื่อผู้ใช้งาน (Username)</th>
+                <th className="py-3.5 px-4">รหัสผ่าน (Password)</th>
                 <th className="py-3.5 px-4">หน้าที่ / บูทประจำการ</th>
                 <th className="py-3.5 px-4">สิทธิ์การใช้งาน (Role)</th>
                 <th className="py-3.5 px-4">สถานะ</th>
@@ -194,59 +228,81 @@ export const StaffManager: React.FC<Props> = ({ staffList, onRefresh }) => {
             <tbody className="divide-y divide-slate-800/60 font-medium">
               {staffList.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-slate-500">
+                  <td colSpan={6} className="py-8 text-center text-slate-500">
                     ยังไม่มีข้อมูลเจ้าหน้าที่สตาฟ
                   </td>
                 </tr>
               ) : (
-                staffList.map((st) => (
-                  <tr key={st.id} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3.5 px-4 font-bold text-white font-mono">
-                      <div className="flex items-center gap-2">
-                        <span className="text-mario-yellow">@{st.username || st.email?.split('@')[0]}</span>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      {st.role === 'admin' ? (
-                        <span className="text-red-400 font-bold">⚡ ผู้ดูแลระบบทั้งหมด (Admin)</span>
-                      ) : st.staff_duty === 'booth_staff' || st.assigned_booth_name ? (
-                        <div className="flex items-center gap-1.5 text-mario-green font-bold">
-                          <MapPin className="w-3.5 h-3.5 text-mario-orange" />
-                          <span>ประจำบูธ: {st.assigned_booth_name || 'บูธกิจกรรม'}</span>
+                staffList.map((st) => {
+                  const passVal = getDisplayPassword(st);
+                  const isVisible = showAllPasswords || Boolean(revealedPasswords[st.id]);
+                  return (
+                    <tr key={st.id} className="hover:bg-slate-800/40 transition-colors">
+                      <td className="py-3.5 px-4 font-bold text-white font-mono">
+                        <div className="flex items-center gap-2">
+                          <span className="text-mario-yellow">@{st.username || st.email?.split('@')[0]}</span>
                         </div>
-                      ) : (
-                        <div className="flex items-center gap-1.5 text-cyan-300 font-bold">
-                          <Scan className="w-3.5 h-3.5 text-cyan-400" />
-                          <span>สแกนไอเท็มลับตามจุด</span>
+                      </td>
+                      <td className="py-3.5 px-4 font-mono">
+                        <div className="flex items-center gap-2">
+                          <span className={`font-bold text-xs ${isVisible ? 'text-amber-300' : 'text-slate-500'}`}>
+                            {isVisible ? passVal : '••••••••'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              soundManager.playClick();
+                              setRevealedPasswords((prev) => ({ ...prev, [st.id]: !prev[st.id] }));
+                            }}
+                            className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                            title="ดู/ซ่อนรหัสผ่านบัญชีนี้"
+                          >
+                            {isVisible ? <EyeOff className="w-3.5 h-3.5 text-amber-400" /> : <Eye className="w-3.5 h-3.5 text-slate-400" />}
+                          </button>
                         </div>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase ${
-                        st.role === 'admin'
-                          ? 'bg-mario-red/20 text-mario-red border border-mario-red/40'
-                          : 'bg-mario-orange/20 text-mario-orange border border-mario-orange/40'
-                      }`}>
-                        {st.role}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-mario-green/20 text-mario-green">
-                        ACTIVE
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-center">
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteStaff(st)}
-                        className="p-1.5 rounded-lg bg-red-950/60 border border-red-800/60 text-red-400 hover:bg-red-900 hover:text-white transition-colors"
-                        title={`ลบบัญชี ${st.username || st.display_name}`}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="py-3.5 px-4">
+                        {st.role === 'admin' ? (
+                          <span className="text-red-400 font-bold">⚡ ผู้ดูแลระบบทั้งหมด (Admin)</span>
+                        ) : st.staff_duty === 'booth_staff' || st.assigned_booth_name ? (
+                          <div className="flex items-center gap-1.5 text-mario-green font-bold">
+                            <MapPin className="w-3.5 h-3.5 text-mario-orange" />
+                            <span>ประจำบูธ: {st.assigned_booth_name || 'บูธกิจกรรม'}</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 text-cyan-300 font-bold">
+                            <Scan className="w-3.5 h-3.5 text-cyan-400" />
+                            <span>สแกนไอเท็มลับตามจุด</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase ${
+                          st.role === 'admin'
+                            ? 'bg-mario-red/20 text-mario-red border border-mario-red/40'
+                            : 'bg-mario-orange/20 text-mario-orange border border-mario-orange/40'
+                        }`}>
+                          {st.role}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-mario-green/20 text-mario-green">
+                          ACTIVE
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteStaff(st)}
+                          className="p-1.5 rounded-lg bg-red-950/60 border border-red-800/60 text-red-400 hover:bg-red-900 hover:text-white transition-colors"
+                          title={`ลบบัญชี ${st.username || st.display_name}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

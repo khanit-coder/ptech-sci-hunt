@@ -222,6 +222,7 @@ class AdminService {
     const newProfile: Profile = {
       id: generateUuid(),
       username: cleanUsername,
+      password: payload.password?.trim() || undefined,
       email,
       full_name: fullName,
       display_name: displayName,
@@ -249,6 +250,7 @@ class AdminService {
           id: targetId,
           email: newProfile.email,
           username: cleanUsername,
+          password: newProfile.password || null,
           full_name: newProfile.full_name,
           display_name: newProfile.display_name,
           role: newProfile.role,

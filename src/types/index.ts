@@ -14,6 +14,7 @@ export type StaffDutyType = 'item_scanner' | 'booth_staff';
 export interface Profile {
   id: string;
   username?: string;
+  password?: string;
   email: string;
   full_name: string;
   display_name: string;
