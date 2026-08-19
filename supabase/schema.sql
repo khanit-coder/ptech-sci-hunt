@@ -54,11 +54,21 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     full_name TEXT NOT NULL,
     display_name TEXT,
     role user_role NOT NULL DEFAULT 'staff',
+    staff_duty TEXT,
+    assigned_booth_id UUID,
+    assigned_booth_name TEXT,
+    username TEXT,
     is_active BOOLEAN NOT NULL DEFAULT true,
     last_login_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE public.profiles
+    ADD COLUMN IF NOT EXISTS staff_duty TEXT,
+    ADD COLUMN IF NOT EXISTS assigned_booth_id UUID,
+    ADD COLUMN IF NOT EXISTS assigned_booth_name TEXT,
+    ADD COLUMN IF NOT EXISTS username TEXT;
 
 -- Table: item_types (Dynamic categories of items)
 CREATE TABLE IF NOT EXISTS public.item_types (

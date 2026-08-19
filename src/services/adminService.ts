@@ -114,7 +114,29 @@ class AdminService {
   async getStaffUsers(): Promise<Profile[]> {
     if (isSupabaseConfigured && supabase) {
       const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: true });
-      if (data) return data as Profile[];
+      if (data) {
+        return data.map((d: any) => {
+          let staff_duty = d.staff_duty;
+          let assigned_booth_name = d.assigned_booth_name;
+
+          if (!staff_duty && d.full_name) {
+            if (d.full_name.includes('ประจำบูธ') || d.full_name.includes('บูท') || d.display_name?.includes('บูท')) {
+              staff_duty = 'booth_staff';
+              const match = d.full_name.match(/ประจำบูธ:\s*([^)]+)/) || d.full_name.match(/\(([^)]+)\)/);
+              if (match) assigned_booth_name = match[1];
+            } else if (d.full_name.includes('สแกนไอเท็ม')) {
+              staff_duty = 'item_scanner';
+            }
+          }
+
+          return {
+            ...d,
+            username: d.username || d.email?.split('@')[0] || d.display_name,
+            staff_duty: staff_duty || (d.role === 'staff' ? 'item_scanner' : undefined),
+            assigned_booth_name,
+          } as Profile;
+        });
+      }
     }
 
     if (this.staffUsers.length > 0) {
@@ -181,7 +203,7 @@ class AdminService {
     if (payload.role === 'staff') {
       if (payload.staff_duty === 'booth_staff' && payload.assigned_booth_name) {
         displayName = `Staff - ${payload.assigned_booth_name}`;
-        fullName = `${cleanUsername} (${payload.assigned_booth_name})`;
+        fullName = `${cleanUsername} (ประจำบูธ: ${payload.assigned_booth_name})`;
       } else {
         displayName = `Staff - สแกนไอเท็ม`;
         fullName = `${cleanUsername} (สแกนไอเท็ม)`;
@@ -213,9 +235,21 @@ class AdminService {
 
     if (isSupabaseConfigured && supabase) {
       try {
-        const { data, error } = await supabase.from('profiles').upsert(newProfile, { onConflict: 'email' }).select().single();
+        // Send only standard columns to Supabase profiles table to avoid schema cache error
+        const dbPayload = {
+          id: newProfile.id,
+          email: newProfile.email,
+          full_name: newProfile.full_name,
+          display_name: newProfile.display_name,
+          role: newProfile.role,
+          is_active: newProfile.is_active,
+          created_at: newProfile.created_at,
+          updated_at: newProfile.updated_at,
+        };
+
+        const { data, error } = await supabase.from('profiles').upsert(dbPayload, { onConflict: 'email' }).select().single();
         if (!error && data) {
-          return { success: true, profile: data as Profile, message: 'สร้างบัญชีสตาฟสำเร็จ!' };
+          return { success: true, profile: { ...newProfile, ...data } as Profile, message: 'สร้างบัญชีสตาฟสำเร็จ!' };
         }
         if (error) return { success: false, message: error.message };
       } catch (err: any) {
