@@ -19,6 +19,7 @@ import { soundManager } from '@/lib/sound';
 
 interface Props {
   students: Student[];
+  title?: string;
   onClose: () => void;
 }
 
@@ -31,7 +32,7 @@ const LAYOUT_CONFIG: Record<LayoutMode, { cols: number; rows: number; label: str
   '2x2': { cols: 2, rows: 2, label: '2×2 (4 บัตร/แผ่น ขนาดใหญ่)', cardH: '130mm' },
 };
 
-export const StudentQRSheet: React.FC<Props> = ({ students, onClose }) => {
+export const StudentQRSheet: React.FC<Props> = ({ students, title, onClose }) => {
   const [showStudentName, setShowStudentName] = useState(true);
   const [showStudentCode, setShowStudentCode] = useState(true);
   const [showClassName, setShowClassName] = useState(true);
@@ -78,7 +79,9 @@ export const StudentQRSheet: React.FC<Props> = ({ students, onClose }) => {
           <div className="flex items-center gap-3">
             <QrCode className="w-5 h-5 text-mario-yellow" />
             <div>
-              <h2 className="font-game text-xs text-mario-yellow">STUDENT QR CODE SHEET</h2>
+              <h2 className="font-game text-xs text-mario-yellow">
+                {title ? `STUDENT QR SHEET — ${title.toUpperCase()}` : 'STUDENT QR CODE SHEET'}
+              </h2>
               <p className="text-xs text-slate-400">
                 {students.length} คน • {pages.length} แผ่น A4 • Layout: {cfg.label}
               </p>

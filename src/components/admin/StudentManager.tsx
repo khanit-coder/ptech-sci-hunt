@@ -47,7 +47,7 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
   // Modal states
   const [isAdding, setIsAdding] = useState(false);
   const [isRegisterExtOpen, setIsRegisterExtOpen] = useState(false);
-  const [isQrSheetOpen, setIsQrSheetOpen] = useState(false);
+  const [qrSheetTarget, setQrSheetTarget] = useState<'internal' | 'external' | null>(null);
 
   // Form states for single student addition
   const [formCode, setFormCode] = useState('');
@@ -61,6 +61,16 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
   // Count internal vs external
   const internalCount = useMemo(() => students.filter((s) => s.student_status !== 'external').length, [students]);
   const externalCount = useMemo(() => students.filter((s) => s.student_status === 'external').length, [students]);
+
+  // Target lists for QR printing (uses sorted/filtered view)
+  const printInternalList = useMemo(
+    () => sortedStudents.filter((s) => s.student_status !== 'external'),
+    [sortedStudents]
+  );
+  const printExternalList = useMemo(
+    () => sortedStudents.filter((s) => s.student_status === 'external'),
+    [sortedStudents]
+  );
 
   // Extract unique options for dropdown filters
   const classList = useMemo(() => {
@@ -252,18 +262,34 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
 
         {/* Header Action Buttons */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Print Student QR Sheet */}
+          {/* Print Internal Student QR Sheet */}
           <button
             type="button"
             onClick={() => {
               soundManager.playClick();
-              setIsQrSheetOpen(true);
+              setQrSheetTarget('internal');
             }}
-            className="px-3.5 py-2 rounded-xl bg-blue-950/80 border border-blue-500/80 text-blue-300 hover:bg-blue-900 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
-            title={`พิมพ์ QR Code นักเรียน (${sortedStudents.length} คน)`}
+            disabled={printInternalList.length === 0}
+            className="px-3.5 py-2 rounded-xl bg-blue-950/80 border border-blue-500/80 text-blue-300 hover:bg-blue-900 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-40"
+            title={`พิมพ์ QR Code นักเรียนภายใน (${printInternalList.length} คน)`}
           >
             <Printer className="w-3.5 h-3.5 text-blue-400" />
-            <span>พิมพ์ QR นักเรียน ({sortedStudents.length})</span>
+            <span>พิมพ์ QR นักเรียนภายใน ({printInternalList.length})</span>
+          </button>
+
+          {/* Print External Student QR Sheet */}
+          <button
+            type="button"
+            onClick={() => {
+              soundManager.playClick();
+              setQrSheetTarget('external');
+            }}
+            disabled={printExternalList.length === 0}
+            className="px-3.5 py-2 rounded-xl bg-purple-950/80 border border-purple-500/80 text-purple-300 hover:bg-purple-900 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-40"
+            title={`พิมพ์ QR Code นักเรียนภายนอก (${printExternalList.length} คน)`}
+          >
+            <Printer className="w-3.5 h-3.5 text-purple-400" />
+            <span>พิมพ์ QR นักเรียนภายนอก ({printExternalList.length})</span>
           </button>
 
           {/* Register External QR Button */}
@@ -649,11 +675,12 @@ export const StudentManager: React.FC<Props> = ({ students, onRefresh, onOpenImp
         />
       )}
 
-      {/* Student QR Print Sheet */}
-      {isQrSheetOpen && filteredStudents.length > 0 && (
+      {/* Student QR Print Sheet Modal */}
+      {qrSheetTarget && (
         <StudentQRSheet
-          students={filteredStudents}
-          onClose={() => setIsQrSheetOpen(false)}
+          students={qrSheetTarget === 'internal' ? printInternalList : printExternalList}
+          title={qrSheetTarget === 'internal' ? 'นักเรียนภายใน (Internal Students)' : 'นักเรียนภายนอก (External Visitors)'}
+          onClose={() => setQrSheetTarget(null)}
         />
       )}
     </div>
